@@ -1,0 +1,309 @@
+﻿{
+	"destination": "detailScreen",
+	"rightMargin": 6,
+	"bottomMargin": 6,
+	"markerHeader": 15,
+	"markerBody": 200,
+	"markerBreak": 220,
+	"markerFooter": 240,
+	"events": [
+		"onLoad",
+		"onValidate",
+		"onClick",
+		"onOutsideCall",
+		"onDoubleClick",
+		"onDrop",
+		"onMenuSelect",
+		"onDataChange",
+		"onDragOver",
+		"onTimer",
+		"onAfterKeystroke",
+		"onSelectionChange",
+		"onBeginDragOver",
+		"onPageChange"
+	],
+	"method": "method.4dm",
+	"pageFormat": {
+		"paperName": "DIN A4",
+		"paperWidth": "842pt",
+		"paperHeight": "595pt"
+	},
+	"pages": [
+		null,
+		{
+			"objects": {
+				"_SRCPROP_": {
+					"type": "listbox",
+					"top": 5,
+					"left": 6,
+					"width": 252,
+					"height": 375,
+					"sizingY": "grow",
+					"resizingMode": "legacy",
+					"listboxType": "collection",
+					"sortable": false,
+					"movableRows": false,
+					"dragging": "custom",
+					"dataSource": "Form:C1466.propertyList",
+					"currentItemSource": "Form:C1466.propertySelected",
+					"currentItemPositionSource": "Form:C1466.propertyPosition",
+					"selectionMode": "single",
+					"scrollbarHorizontal": "automatic",
+					"fontFamily": "Arial",
+					"fontSize": 13,
+					"method": "ObjectMethods/_SRCPROP_.4dm",
+					"events": [
+						"onDoubleClick",
+						"onSelectionChange",
+						"onBeginDragOver"
+					],
+					"columns": [
+						{
+							"name": "Column4",
+							"dataSource": "Util_Query_GetPropertyPicture (This:C1470)",
+							"dataSourceTypeHint": "picture",
+							"width": 25,
+							"minWidth": 10,
+							"maxWidth": 30,
+							"enterable": false,
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header4",
+								"fontFamily": "Arial",
+								"fontSize": 13
+							},
+							"footer": {
+								"name": " 1",
+								"timeFormat": "hh_mm_ss",
+								"fontFamily": "Arial",
+								"fontSize": 13
+							}
+						},
+						{
+							"name": "Column1",
+							"dataSource": "This:C1470.localName",
+							"width": 212,
+							"minWidth": 10,
+							"maxWidth": 32000,
+							"enterable": false,
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header1",
+								"text": "Properties",
+								"fontFamily": "Arial",
+								"fontSize": 13,
+								"fontWeight": "bold"
+							},
+							"footer": {
+								"name": "Footer1",
+								"timeFormat": "hh_mm_ss",
+								"fontFamily": "Arial",
+								"fontSize": 13
+							}
+						}
+					]
+				},
+				"_ADD_bSort": {
+					"type": "button",
+					"top": 25,
+					"left": 264,
+					"width": 32,
+					"height": 32,
+					"tooltip": "Add criteria",
+					"textAlign": "center",
+					"stroke": "#000000",
+					"focusable": false,
+					"icon": "/RESOURCES/Images/Buttons/LightGreySmall/NewSubRecord.png",
+					"iconFrames": 4,
+					"style": "custom",
+					"method": "ObjectMethods/_ADD_bSort.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_REM_bSort": {
+					"type": "button",
+					"top": 56,
+					"left": 264,
+					"width": 32,
+					"height": 32,
+					"tooltip": "Remove criteria",
+					"textAlign": "center",
+					"stroke": "#000000",
+					"focusable": false,
+					"icon": "/RESOURCES/Images/Buttons/LightGreySmall/DeleteSubRecord.png",
+					"iconFrames": 4,
+					"style": "custom",
+					"method": "ObjectMethods/_REM_bSort.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_VAL_bSort1": {
+					"type": "button",
+					"top": 333,
+					"left": 503,
+					"width": 58,
+					"height": 48,
+					"sizingX": "move",
+					"sizingY": "move",
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Order By"
+					},
+					"action": "accept",
+					"class": "Texts11N",
+					"textAlign": "center",
+					"stroke": "#777777",
+					"focusable": false,
+					"text": ":xliff:Sort",
+					"icon": "/RESOURCES/Images/Buttons/LightGreySmall/Validate.png",
+					"iconFrames": 4,
+					"style": "custom",
+					"events": [
+						"onClick"
+					]
+				},
+				"_CAN_bSort1": {
+					"type": "button",
+					"top": 333,
+					"left": 445,
+					"width": 58,
+					"height": 48,
+					"sizingX": "move",
+					"sizingY": "move",
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Add Property"
+					},
+					"action": "cancel",
+					"class": "Texts11N",
+					"textAlign": "center",
+					"stroke": "#777777",
+					"focusable": false,
+					"text": ":xliff:Cancel",
+					"icon": "/RESOURCES/Images/Buttons/LightGreySmall/Cancel.png",
+					"iconFrames": 4,
+					"style": "custom",
+					"events": [
+						"onClick"
+					]
+				},
+				"_DESTPROP_": {
+					"type": "listbox",
+					"top": 5,
+					"left": 302,
+					"width": 259,
+					"height": 315,
+					"sizingX": "grow",
+					"sizingY": "grow",
+					"resizingMode": "legacy",
+					"listboxType": "collection",
+					"sortable": false,
+					"movableRows": false,
+					"dropping": "custom",
+					"dataSource": "Form:C1466.criteriaList",
+					"currentItemSource": "Form:C1466.criteriaSelected",
+					"currentItemPositionSource": "Form:C1466.criteriaPosition",
+					"selectionMode": "single",
+					"scrollbarHorizontal": "automatic",
+					"fontFamily": "Arial",
+					"fontSize": 13,
+					"method": "ObjectMethods/_DESTPROP_.4dm",
+					"events": [
+						"onClick",
+						"onDoubleClick",
+						"onDrop",
+						"onDragOver",
+						"onSelectionChange"
+					],
+					"columns": [
+						{
+							"name": "Column5",
+							"dataSource": "This:C1470.localName",
+							"width": 210,
+							"minWidth": 10,
+							"maxWidth": 300,
+							"enterable": false,
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header5",
+								"text": "Order by...",
+								"fontFamily": "Arial",
+								"fontSize": 13,
+								"fontWeight": "bold"
+							},
+							"footer": {
+								"name": " 2",
+								"timeFormat": "hh_mm_ss",
+								"fontFamily": "Arial",
+								"fontSize": 13
+							}
+						},
+						{
+							"name": "Column6",
+							"dataSource": "This:C1470.criteriaPict",
+							"dataSourceTypeHint": "picture",
+							"width": 34,
+							"minWidth": 30,
+							"maxWidth": 40,
+							"enterable": false,
+							"pictureFormat": "truncatedCenter",
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"method": "ObjectMethods/Column6.4dm",
+							"header": {
+								"name": "Header6",
+								"fontFamily": "Arial",
+								"fontSize": 13,
+								"fontWeight": "bold"
+							},
+							"footer": {
+								"name": "Footer4",
+								"timeFormat": "hh_mm_ss",
+								"fontFamily": "Arial",
+								"fontSize": 13
+							}
+						}
+					]
+				}
+			}
+		}
+	],
+	"editor": {
+		"activeView": "View 1",
+		"defaultView": "View 1",
+		"views": {
+			"View 1": {},
+			"View 2": {},
+			"View 3": {
+				"objects": [
+					"_ADD_bSort"
+				]
+			},
+			"View 4": {},
+			"View 5": {},
+			"View 6": {},
+			"View 7": {},
+			"View 8": {},
+			"View 9": {}
+		}
+	}
+}

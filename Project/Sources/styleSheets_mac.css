@@ -1,0 +1,32 @@
+.default {
+	font-family: Lucida Grande;
+	font-size: 13px;
+}
+
+.Texts11N {
+	font-family: Arial;
+	font-size: 11px;
+}
+
+.Texts12N {
+	font-family: Arial;
+	font-size: 12px;
+}
+
+.Texts13B {
+	font-family: Arial;
+	font-size: 13px;
+	font-weight: bold;
+}
+
+.Texts13N {
+	font-family: Arial;
+	font-size: 13px;
+}
+
+.Texts14B {
+	font-family: Arial;
+	font-size: 14px;
+	font-weight: bold;
+}
+

@@ -1,0 +1,129 @@
+﻿{
+	"$4d": {
+		"version": "1",
+		"kind": "form"
+	},
+	"windowSizingX": "variable",
+	"windowSizingY": "variable",
+	"windowMinWidth": 0,
+	"windowMinHeight": 0,
+	"windowMaxWidth": 32767,
+	"windowMaxHeight": 32767,
+	"rightMargin": 20,
+	"bottomMargin": 20,
+	"events": [
+		"onLoad",
+		"onPageChange",
+		"onValidate",
+		"onClick",
+		"onDoubleClick",
+		"onOutsideCall",
+		"onBeginDragOver",
+		"onDragOver",
+		"onDrop",
+		"onAfterKeystroke",
+		"onMenuSelect",
+		"onPluginArea",
+		"onAfterEdit",
+		"onTimer",
+		"onBoundVariableChange"
+	],
+	"windowTitle": "Data browser",
+	"destination": "detailScreen",
+	"pages": [
+		{
+			"objects": {}
+		},
+		{
+			"objects": {
+				"List Box": {
+					"type": "listbox",
+					"left": 21,
+					"top": 58,
+					"width": 557,
+					"height": 437,
+					"events": [
+						"onClick",
+						"onHeaderClick",
+						"onDataChange",
+						"onSelectionChange"
+					],
+					"listboxType": "collection",
+					"dataSource": "Form:C1466.listbox",
+					"sizingX": "grow",
+					"sizingY": "grow",
+					"resizingMode": "legacy",
+					"method": "ObjectMethods/List Box.4dm",
+					"currentItemSource": "Form:C1466.entity",
+					"columns": []
+				},
+				"tablelist": {
+					"type": "dropdown",
+					"left": 21,
+					"top": 23,
+					"width": 183,
+					"height": 22,
+					"events": [
+						"onDataChange"
+					],
+					"method": "ObjectMethods/tablelist.4dm"
+				},
+				"Splitter": {
+					"type": "splitter",
+					"left": 587,
+					"top": 54,
+					"width": 1,
+					"height": 451,
+					"sizingY": "grow"
+				},
+				"subform": {
+					"type": "subform",
+					"left": 598,
+					"top": 59,
+					"width": 369,
+					"height": 409,
+					"sizingX": "grow",
+					"sizingY": "grow",
+					"dataSource": "Form:C1466.entity",
+					"scrollbarVertical": "visible"
+				},
+				"Eingabe": {
+					"type": "input",
+					"left": 392,
+					"top": 25,
+					"width": 186,
+					"height": 17,
+					"dataSource": "Form:C1466.query",
+					"events": [
+						"onDataChange"
+					],
+					"method": "ObjectMethods/Eingabe.4dm"
+				},
+				"fieldlist": {
+					"type": "dropdown",
+					"left": 214,
+					"top": 23,
+					"width": 161,
+					"height": 22,
+					"events": [
+						"onDataChange"
+					]
+				},
+				"Schaltfläche": {
+					"type": "button",
+					"text": "Save",
+					"top": 480,
+					"left": 878,
+					"width": 89,
+					"height": 20,
+					"events": [
+						"onClick"
+					],
+					"method": "ObjectMethods/Schaltfläche.4dm",
+					"sizingY": "move"
+				}
+			}
+		}
+	],
+	"method": "method.4dm"
+}

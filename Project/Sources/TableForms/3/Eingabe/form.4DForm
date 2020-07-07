@@ -1,0 +1,604 @@
+﻿{
+	"destination": "detailScreen",
+	"rightMargin": 19,
+	"bottomMargin": 20,
+	"markerBody": 386,
+	"markerBreak": 386,
+	"markerFooter": 396,
+	"events": [
+		"onLoad",
+		"onValidate",
+		"onClick",
+		"onHeader",
+		"onPrintingBreak",
+		"onPrintingFooter",
+		"onDisplayDetail",
+		"onOutsideCall",
+		"onDoubleClick",
+		"onDrop",
+		"onMenuSelect",
+		"onPluginArea",
+		"onDataChange",
+		"onDragOver",
+		"onPrintingDetail",
+		"onOpenDetail",
+		"onCloseDetail",
+		"onTimer",
+		"onAfterKeystroke",
+		"onLoadRecord",
+		"onAfterEdit",
+		"onBeginDragOver",
+		"onBoundVariableChange",
+		"onPageChange"
+	],
+	"pageFormat": {
+		"paperName": "DIN A4",
+		"paperWidth": "842pt",
+		"paperHeight": "595pt"
+	},
+	"pages": [
+		null,
+		{
+			"objects": {
+				"vRecNum": {
+					"type": "input",
+					"top": 96,
+					"left": 338,
+					"width": 100,
+					"height": 12,
+					"stroke": "#000000",
+					"fontFamily": ".SF NS Text",
+					"fontSize": 9,
+					"focusable": false,
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Datensatznummer"
+					},
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"method": "ObjectMethods/vRecNum.4dm",
+					"events": [
+						"onLoad",
+						"onHeader",
+						"onPrintingBreak"
+					]
+				},
+				"Text13": {
+					"type": "text",
+					"top": 93,
+					"left": 24,
+					"width": 299,
+					"height": 17,
+					"sizingX": "grow",
+					"stroke": "#000000",
+					"text": "INVOICE_LINES"
+				},
+				"Linie14": {
+					"type": "line",
+					"top": 77,
+					"left": 16,
+					"width": 436,
+					"sizingX": "grow"
+				},
+				"bFirst": {
+					"type": "pictureButton",
+					"top": 16,
+					"left": 21,
+					"width": 48,
+					"height": 48,
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Erster Datensat"
+					},
+					"action": "firstRecord",
+					"rowCount": 4,
+					"picture": "/RESOURCES/Images/Buttons/LightGrey/FirstRecord.png",
+					"switchWhenRollover": true,
+					"switchBackWhenReleased": true,
+					"useLastFrameAsDisabled": true,
+					"events": [
+						"onClick"
+					]
+				},
+				"bPrevious": {
+					"type": "pictureButton",
+					"top": 16,
+					"left": 84,
+					"width": 48,
+					"height": 48,
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Vorheriger Date"
+					},
+					"action": "previousRecord",
+					"rowCount": 4,
+					"picture": "/RESOURCES/Images/Buttons/LightGrey/PreviousRecord.png",
+					"switchWhenRollover": true,
+					"switchBackWhenReleased": true,
+					"useLastFrameAsDisabled": true,
+					"events": [
+						"onClick"
+					]
+				},
+				"bNext": {
+					"type": "pictureButton",
+					"top": 16,
+					"left": 147,
+					"width": 48,
+					"height": 48,
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Nächster Datens"
+					},
+					"action": "nextRecord",
+					"rowCount": 4,
+					"picture": "/RESOURCES/Images/Buttons/LightGrey/NextRecord.png",
+					"switchWhenRollover": true,
+					"switchBackWhenReleased": true,
+					"useLastFrameAsDisabled": true,
+					"events": [
+						"onClick"
+					]
+				},
+				"bLast": {
+					"type": "pictureButton",
+					"top": 16,
+					"left": 210,
+					"width": 48,
+					"height": 48,
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Letzter Datensa"
+					},
+					"action": "lastRecord",
+					"rowCount": 4,
+					"picture": "/RESOURCES/Images/Buttons/LightGrey/LastRecord.png",
+					"switchWhenRollover": true,
+					"switchBackWhenReleased": true,
+					"useLastFrameAsDisabled": true,
+					"events": [
+						"onClick"
+					]
+				},
+				"bDelete": {
+					"type": "pictureButton",
+					"top": 16,
+					"left": 273,
+					"width": 48,
+					"height": 48,
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Datensatz lösch"
+					},
+					"action": "deleteRecord",
+					"rowCount": 4,
+					"picture": "/RESOURCES/Images/Buttons/LightGrey/DeleteRecord.png",
+					"switchWhenRollover": true,
+					"switchBackWhenReleased": true,
+					"useLastFrameAsDisabled": true,
+					"events": [
+						"onClick"
+					]
+				},
+				"bCancel": {
+					"type": "pictureButton",
+					"top": 16,
+					"left": 336,
+					"width": 48,
+					"height": 48,
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Abbrechen"
+					},
+					"action": "cancel",
+					"rowCount": 4,
+					"picture": "/RESOURCES/Images/Buttons/LightGrey/Cancel.png",
+					"switchWhenRollover": true,
+					"switchBackWhenReleased": true,
+					"useLastFrameAsDisabled": true,
+					"events": [
+						"onClick"
+					]
+				},
+				"bValidate": {
+					"type": "pictureButton",
+					"top": 16,
+					"left": 399,
+					"width": 48,
+					"height": 48,
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/OK"
+					},
+					"action": "accept",
+					"rowCount": 4,
+					"picture": "/RESOURCES/Images/Buttons/LightGrey/Validate.png",
+					"switchWhenRollover": true,
+					"switchBackWhenReleased": true,
+					"useLastFrameAsDisabled": true,
+					"events": [
+						"onClick"
+					]
+				},
+				"Text15": {
+					"type": "text",
+					"top": 126,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "ID : "
+				},
+				"Text16": {
+					"type": "text",
+					"top": 153,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Invoice_ID : "
+				},
+				"Text17": {
+					"type": "text",
+					"top": 180,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Product_ID : "
+				},
+				"Text18": {
+					"type": "text",
+					"top": 207,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Quantity : "
+				},
+				"Text19": {
+					"type": "text",
+					"top": 234,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Unit_Price : "
+				},
+				"Text20": {
+					"type": "text",
+					"top": 261,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Discount_Rate : "
+				},
+				"Text21": {
+					"type": "text",
+					"top": 288,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Tax_Rate : "
+				},
+				"Text22": {
+					"type": "text",
+					"top": 315,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Total : "
+				},
+				"Text23": {
+					"type": "text",
+					"top": 342,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Total_Tax : "
+				},
+				"Text24": {
+					"type": "text",
+					"top": 369,
+					"left": 119,
+					"width": 102,
+					"height": 17,
+					"textAlign": "right",
+					"text": "Line_Number : "
+				},
+				"ID": {
+					"type": "input",
+					"top": 126,
+					"left": 226,
+					"width": 64,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]ID:1",
+					"dataSourceTypeHint": "integer",
+					"textAlign": "left",
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "sunken",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Invoice_ID": {
+					"type": "input",
+					"top": 153,
+					"left": 226,
+					"width": 64,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Invoice_ID:2",
+					"dataSourceTypeHint": "integer",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Product_ID": {
+					"type": "input",
+					"top": 180,
+					"left": 226,
+					"width": 64,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Product_ID:3",
+					"dataSourceTypeHint": "integer",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Quantity": {
+					"type": "input",
+					"top": 207,
+					"left": 226,
+					"width": 72,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Quantity:6",
+					"dataSourceTypeHint": "number",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Unit_Price": {
+					"type": "input",
+					"top": 234,
+					"left": 226,
+					"width": 72,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Unit_Price:7",
+					"dataSourceTypeHint": "number",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Discount_Rate": {
+					"type": "input",
+					"top": 261,
+					"left": 226,
+					"width": 72,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Discount_Rate:8",
+					"dataSourceTypeHint": "number",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Tax_Rate": {
+					"type": "input",
+					"top": 288,
+					"left": 226,
+					"width": 72,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Tax_Rate:9",
+					"dataSourceTypeHint": "number",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Total": {
+					"type": "input",
+					"top": 315,
+					"left": 226,
+					"width": 72,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Total:10",
+					"dataSourceTypeHint": "number",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Total_Tax": {
+					"type": "input",
+					"top": 342,
+					"left": 226,
+					"width": 72,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Total_Tax:11",
+					"dataSourceTypeHint": "number",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"Line_Number": {
+					"type": "input",
+					"top": 369,
+					"left": 226,
+					"width": 56,
+					"height": 17,
+					"dataSource": "[INVOICE_LINES:3]Line_Number:12",
+					"textAlign": "left",
+					"fill": "#FFFFFF",
+					"borderStyle": "sunken",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				}
+			}
+		}
+	],
+	"editor": {
+		"activeView": "View 1",
+		"defaultView": "View 1",
+		"views": {
+			"View 1": {},
+			"View 2": {
+				"objects": [
+					"vRecNum",
+					"Text13",
+					"Linie14"
+				]
+			},
+			"View 3": {
+				"objects": [
+					"bFirst",
+					"bPrevious",
+					"bNext",
+					"bLast",
+					"bDelete",
+					"bCancel",
+					"bValidate"
+				]
+			},
+			"View 4": {},
+			"View 5": {},
+			"View 6": {},
+			"View 7": {},
+			"View 8": {},
+			"View 9": {}
+		}
+	}
+}

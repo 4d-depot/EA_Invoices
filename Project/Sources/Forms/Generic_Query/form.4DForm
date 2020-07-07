@@ -1,0 +1,360 @@
+﻿{
+	"destination": "detailScreen",
+	"rightMargin": 10,
+	"bottomMargin": 6,
+	"markerHeader": 15,
+	"markerBody": 200,
+	"markerBreak": 220,
+	"markerFooter": 240,
+	"events": [
+		"onLoad",
+		"onValidate",
+		"onClick",
+		"onDoubleClick",
+		"onDrop",
+		"onDataChange",
+		"onDragOver",
+		"onAfterEdit",
+		"onBeginDragOver"
+	],
+	"method": "method.4dm",
+	"pageFormat": {
+		"paperName": "DIN A4",
+		"paperWidth": "842pt",
+		"paperHeight": "595pt"
+	},
+	"pages": [
+		null,
+		{
+			"objects": {
+				"_SRCPROP_": {
+					"type": "listbox",
+					"top": 11,
+					"left": 11,
+					"width": 252,
+					"height": 375,
+					"sizingX": "grow",
+					"sizingY": "grow",
+					"resizingMode": "legacy",
+					"listboxType": "collection",
+					"sortable": false,
+					"movableRows": false,
+					"dragging": "custom",
+					"dataSource": "Form:C1466.propertyList",
+					"currentItemSource": "Form:C1466.propertySelected",
+					"currentItemPositionSource": "Form:C1466.propertyPosition",
+					"selectionMode": "single",
+					"scrollbarHorizontal": "automatic",
+					"verticalLineStroke": "transparent",
+					"method": "ObjectMethods/_SRCPROP_.4dm",
+					"events": [
+						"onDoubleClick",
+						"onSelectionChange",
+						"onBeginDragOver"
+					],
+					"columns": [
+						{
+							"name": "Column00",
+							"dataSource": "Util_Query_GetPropertyPicture (This:C1470)",
+							"dataSourceTypeHint": "picture",
+							"width": 26,
+							"minWidth": 10,
+							"maxWidth": 30,
+							"pictureFormat": "truncatedCenter",
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header00"
+							},
+							"footer": {
+								"name": " 1",
+								"timeFormat": "hh_mm_ss"
+							}
+						},
+						{
+							"name": "Column0",
+							"dataSource": "This:C1470.localName",
+							"width": 211,
+							"minWidth": 10,
+							"maxWidth": 32000,
+							"enterable": false,
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header0",
+								"text": "Properties",
+								"fontFamily": "Arial",
+								"fontSize": 13,
+								"fontWeight": "bold"
+							},
+							"footer": {
+								"name": "Footer1",
+								"timeFormat": "hh_mm_ss"
+							}
+						}
+					]
+				},
+				"_ADD_bSort": {
+					"type": "button",
+					"top": 30,
+					"left": 270,
+					"width": 26,
+					"height": 26,
+					"tooltip": "Add criteria",
+					"focusable": false,
+					"icon": "/RESOURCES/Images/Buttons/LightGreySmall/NewSubRecord.png",
+					"iconFrames": 4,
+					"style": "custom",
+					"method": "ObjectMethods/_ADD_bSort.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_REM_bSort": {
+					"type": "button",
+					"top": 62,
+					"left": 270,
+					"width": 26,
+					"height": 26,
+					"tooltip": "Remove criteria",
+					"focusable": false,
+					"icon": "/RESOURCES/Images/Buttons/LightGreySmall/DeleteSubRecord.png",
+					"iconFrames": 4,
+					"style": "custom",
+					"method": "ObjectMethods/_REM_bSort.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_VAL_bSort": {
+					"type": "button",
+					"top": 333,
+					"left": 848,
+					"width": 58,
+					"height": 48,
+					"sizingX": "move",
+					"sizingY": "move",
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Order By Extend"
+					},
+					"action": "accept",
+					"class": "Texts11N",
+					"textAlign": "center",
+					"stroke": "#777777",
+					"focusable": false,
+					"text": ":xliff:Query",
+					"icon": "/RESOURCES/Images/Buttons/LightGreySmall/Validate.png",
+					"iconFrames": 4,
+					"style": "custom",
+					"method": "ObjectMethods/_VAL_bSort.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_CAN_bSort": {
+					"type": "button",
+					"top": 333,
+					"left": 790,
+					"width": 58,
+					"height": 48,
+					"sizingX": "move",
+					"sizingY": "move",
+					"tooltip": {
+						"$ref": "/SOURCES/tips.json#/Add Property"
+					},
+					"action": "cancel",
+					"class": "Texts11N",
+					"textAlign": "center",
+					"stroke": "#777777",
+					"focusable": false,
+					"text": ":xliff:Cancel",
+					"icon": "/RESOURCES/Images/Buttons/LightGreySmall/Cancel.png",
+					"iconFrames": 4,
+					"style": "custom",
+					"events": [
+						"onClick"
+					]
+				},
+				"_DESTPROP_": {
+					"type": "listbox",
+					"top": 11,
+					"left": 303,
+					"width": 605,
+					"height": 315,
+					"sizingX": "grow",
+					"sizingY": "grow",
+					"resizingMode": "legacy",
+					"dataSource": "lb_Criterias",
+					"sortable": false,
+					"dropping": "custom",
+					"singleClickEdit": true,
+					"selectionMode": "single",
+					"scrollbarHorizontal": "automatic",
+					"method": "ObjectMethods/_DESTPROP_.4dm",
+					"events": [
+						"onClick",
+						"onDoubleClick",
+						"onDrop",
+						"onDataChange",
+						"onDragOver",
+						"onSelectionChange",
+						"onAfterEdit"
+					],
+					"columns": [
+						{
+							"name": "Column4",
+							"dataSource": "qry_ar_Logicals",
+							"dataSourceTypeHint": "object",
+							"width": 60,
+							"minWidth": 20,
+							"maxWidth": 80,
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header4"
+							},
+							"footer": {
+								"name": " 3",
+								"timeFormat": "hh_mm_ss"
+							}
+						},
+						{
+							"name": "Column1",
+							"dataSource": "qry_ar_PropertyName",
+							"width": 236,
+							"minWidth": 10,
+							"maxWidth": 32000,
+							"enterable": false,
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header1",
+								"text": "Property",
+								"fontFamily": "Arial",
+								"fontSize": 13,
+								"fontWeight": "bold"
+							},
+							"footer": {
+								"name": "Footer2",
+								"timeFormat": "hh_mm_ss"
+							}
+						},
+						{
+							"name": "Column2",
+							"dataSource": "qry_ar_Operators",
+							"dataSourceTypeHint": "object",
+							"width": 180,
+							"minWidth": 40,
+							"maxWidth": 180,
+							"pictureFormat": "truncatedCenter",
+							"textAlign": "center",
+							"verticalAlign": "middle",
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onDataChange"
+							],
+							"method": "ObjectMethods/Column2.4dm",
+							"header": {
+								"name": "Header2",
+								"text": "Operator",
+								"fontFamily": "Arial",
+								"fontSize": 13,
+								"fontWeight": "bold"
+							},
+							"footer": {
+								"name": "Footer3",
+								"timeFormat": "hh_mm_ss"
+							}
+						},
+						{
+							"name": "Column3",
+							"dataSource": "qry_ar_Values",
+							"dataSourceTypeHint": "object",
+							"width": 114,
+							"minWidth": 10,
+							"maxWidth": 32000,
+							"textAlign": "center",
+							"fontFamily": "Arial",
+							"fontSize": 13,
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header3",
+								"text": "Value",
+								"fontFamily": "Arial",
+								"fontSize": 13,
+								"fontWeight": "bold"
+							},
+							"footer": {
+								"name": " 2",
+								"timeFormat": "hh_mm_ss"
+							}
+						},
+						{
+							"name": "Column5",
+							"dataSource": "qry_ar_Properties",
+							"width": 120,
+							"minWidth": 10,
+							"maxWidth": 32000,
+							"visibility": "hidden",
+							"events": [
+								"onClick",
+								"onDataChange"
+							],
+							"header": {
+								"name": "Header5",
+								"text": "Header5"
+							},
+							"footer": {
+								"name": "Footer4",
+								"timeFormat": "hh_mm_ss"
+							}
+						}
+					]
+				},
+				"Check Box": {
+					"type": "checkbox",
+					"top": 346,
+					"left": 303,
+					"width": 278,
+					"height": 22,
+					"sizingY": "move",
+					"dataSource": "Form:C1466.ck_CurrentSel",
+					"text": "In the Current Selection",
+					"stroke": "#555555",
+					"focusable": false,
+					"events": [
+						"onClick"
+					]
+				},
+				"Splitter": {
+					"type": "splitter",
+					"top": 5,
+					"left": 265,
+					"width": 1,
+					"height": 381,
+					"events": [
+						"onClick"
+					]
+				}
+			}
+		}
+	]
+}

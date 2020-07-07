@@ -1,0 +1,353 @@
+﻿{
+	"destination": "listPrinter",
+	"rightMargin": 0,
+	"bottomMargin": 0,
+	"markerHeader": 64,
+	"markerBody": 86,
+	"markerBreak": 114,
+	"markerFooter": 114,
+	"events": [
+		"onLoad",
+		"onValidate",
+		"onClick",
+		"onHeader",
+		"onPrintingBreak",
+		"onPrintingFooter",
+		"onDisplayDetail",
+		"onOutsideCall",
+		"onDoubleClick",
+		"onDrop",
+		"onMenuSelect",
+		"onPluginArea",
+		"onDataChange",
+		"onDragOver",
+		"onPrintingDetail",
+		"onOpenDetail",
+		"onCloseDetail",
+		"onTimer",
+		"onAfterKeystroke",
+		"onLoadRecord",
+		"onAfterEdit",
+		"onBeginDragOver",
+		"onBoundVariableChange",
+		"onPageChange"
+	],
+	"pages": [
+		null,
+		{
+			"objects": {
+				"vDate": {
+					"type": "input",
+					"top": 12,
+					"left": 452,
+					"width": 100,
+					"height": 14,
+					"dataSourceTypeHint": "date",
+					"stroke": "#000000",
+					"class": "Texts11N",
+					"textAlign": "center",
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"method": "ObjectMethods/vDate.4dm",
+					"events": [
+						"onLoad",
+						"onHeader",
+						"onPrintingBreak"
+					]
+				},
+				"vPageNum": {
+					"type": "input",
+					"top": 101,
+					"left": 240,
+					"width": 100,
+					"height": 12,
+					"sizingX": "move",
+					"stroke": "#000000",
+					"textAlign": "center",
+					"fontFamily": ".SF NS Text",
+					"fontSize": 9,
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"method": "ObjectMethods/vPageNum.4dm",
+					"events": [
+						"onLoad",
+						"onHeader",
+						"onPrintingBreak"
+					]
+				},
+				"Text6": {
+					"type": "text",
+					"top": 12,
+					"left": 8,
+					"width": 444,
+					"height": 16,
+					"sizingX": "grow",
+					"stroke": "#000000",
+					"class": "Texts13B",
+					"text": "<?[1]>"
+				},
+				"Line7": {
+					"type": "line",
+					"top": 62,
+					"left": 2,
+					"width": 554,
+					"sizingX": "grow"
+				},
+				"Splitter1_Line2": {
+					"type": "line",
+					"top": 43,
+					"left": 55,
+					"height": 45,
+					"stroke": "#AAAAAA"
+				},
+				"Splitter2_Line2": {
+					"type": "line",
+					"top": 43,
+					"left": 276,
+					"height": 45,
+					"stroke": "#AAAAAA"
+				},
+				"Splitter3_Line2": {
+					"type": "line",
+					"top": 43,
+					"left": 387,
+					"height": 45,
+					"stroke": "#AAAAAA"
+				},
+				"Splitter4_Line2": {
+					"type": "line",
+					"top": 43,
+					"left": 465,
+					"height": 45,
+					"stroke": "#AAAAAA"
+				},
+				"Rectangle12": {
+					"type": "rectangle",
+					"top": 38,
+					"left": 0,
+					"width": 558,
+					"height": 51,
+					"sizingX": "grow",
+					"fill": "transparent"
+				},
+				"Line13": {
+					"type": "line",
+					"top": 85,
+					"left": 2,
+					"width": 553,
+					"sizingX": "grow",
+					"stroke": "#AAAAAA"
+				},
+				"S1_Text": {
+					"type": "text",
+					"top": 43,
+					"left": 5,
+					"width": 48,
+					"height": 14,
+					"class": "Texts11N",
+					"fontWeight": "bold",
+					"text": "<?[1]1>"
+				},
+				"S2_Text": {
+					"type": "text",
+					"top": 43,
+					"left": 59,
+					"width": 215,
+					"height": 14,
+					"class": "Texts11N",
+					"fontWeight": "bold",
+					"text": "<?[1]2>"
+				},
+				"S3_Text": {
+					"type": "text",
+					"top": 43,
+					"left": 280,
+					"width": 105,
+					"height": 14,
+					"class": "Texts11N",
+					"fontWeight": "bold",
+					"text": "<?[1]5>"
+				},
+				"S4_Text": {
+					"type": "text",
+					"top": 43,
+					"left": 391,
+					"width": 72,
+					"height": 14,
+					"class": "Texts11N",
+					"fontWeight": "bold",
+					"text": "<?[1]6>"
+				},
+				"S5_Text": {
+					"type": "text",
+					"top": 43,
+					"left": 469,
+					"width": 85,
+					"height": 14,
+					"class": "Texts11N",
+					"fontWeight": "bold",
+					"text": "<?[1]17>"
+				},
+				"S1_Field": {
+					"type": "input",
+					"top": 66,
+					"left": 5,
+					"width": 48,
+					"height": 14,
+					"dataSource": "[CLIENTS:1]ID:1",
+					"dataSourceTypeHint": "integer",
+					"class": "Texts11N",
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"S2_Field": {
+					"type": "input",
+					"top": 66,
+					"left": 59,
+					"width": 215,
+					"height": 14,
+					"dataSource": "[CLIENTS:1]Name:2",
+					"class": "Texts11N",
+					"fill": "#FFFFFF",
+					"borderStyle": "none",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"S3_Field": {
+					"type": "input",
+					"top": 66,
+					"left": 280,
+					"width": 105,
+					"height": 14,
+					"dataSource": "[CLIENTS:1]City:5",
+					"class": "Texts11N",
+					"fill": "#FFFFFF",
+					"borderStyle": "none",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"S4_Field": {
+					"type": "input",
+					"top": 66,
+					"left": 391,
+					"width": 72,
+					"height": 14,
+					"dataSource": "[CLIENTS:1]State:6",
+					"class": "Texts11N",
+					"fill": "#FFFFFF",
+					"borderStyle": "none",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				},
+				"S5_Field": {
+					"type": "input",
+					"top": 66,
+					"left": 469,
+					"width": 85,
+					"height": 14,
+					"dataSource": "[CLIENTS:1]Country:17",
+					"class": "Texts11N",
+					"fill": "#FFFFFF",
+					"borderStyle": "none",
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"events": [
+						"onLoad",
+						"onValidate",
+						"onClick",
+						"onHeader",
+						"onPrintingBreak",
+						"onPrintingFooter",
+						"onDisplayDetail",
+						"onDataChange",
+						"onPrintingDetail"
+					]
+				}
+			}
+		}
+	],
+	"editor": {
+		"activeView": "View 1",
+		"defaultView": "View 1",
+		"views": {
+			"View 1": {},
+			"View 2": {
+				"objects": [
+					"vDate",
+					"vPageNum",
+					"Text6"
+				]
+			},
+			"View 3": {},
+			"View 4": {},
+			"View 5": {},
+			"View 6": {},
+			"View 7": {},
+			"View 8": {},
+			"View 9": {}
+		}
+	}
+}

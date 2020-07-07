@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><preferences stamp="14">
+	<com.4d>
+		<deployment>
+			<options/>
+		</deployment>
+		<interface>
+			<developper display_toolbar="true"/>
+			<user splash_screen="false"/>
+		</interface>
+		<general startup_environnement="1"/>
+		<compiler>
+			<typage default_for_button="2"/>
+		</compiler>
+		<database>
+			<cache flush_buffer_delay="20s" size_maximum="1024" size_minimum="512"/>
+			<misc standard_xpath="false"/>
+		</database>
+		<server>
+			<network>
+				<options publication_name="InvoicesDemo" publish_at_startup="true"/>
+				<client_server auto_register_clients="true"/>
+			</network>
+		</server>
+		<web>
+			<standalone_server>
+				<configuration allowHttp="true" allow_ssl="false" port_number="80" publish_at_startup="false">
+					<hosts>
+						<host home_page="" html_root="./Web/" id="0" name="default"/>
+					</hosts>
+				</configuration>
+				<options>
+					<cache cache_max_size="524288"/>
+					<keep_alive requests_number="100"/>
+					<web_processes timeout_for_inactives="60"/>
+					<text_conversion send_extended="true"/>
+				</options>
+				<webservices>
+					<server allow_requests="false" name="A_WebService"/>
+				</webservices>
+				<log format="3" tokens="BYTES-SENT;C-DNS;C-IP;CS(COOKIE);CS(HOST);CS(REFERER);CS(USER-AGENT);USER;METHOD;CS-SIP;STATUS;CS-URI;CS-URI-QUERY;CS-URI-STEM;DATE;TIME;TRANSFER_TIME">
+					<backup daily="7;0" hourly="12;0" mode="1" monthly="1;1;0" size="10485760" weekly="1;{0;0}"/>
+				</log>
+				<rest launch_at_startup="true"/>
+			</standalone_server>
+		</web>
+		<sql>
+			<publication port_number="19812"/>
+		</sql>
+		<php ip_address="127.0.0.1"/>
+	</com.4d>
+</preferences>

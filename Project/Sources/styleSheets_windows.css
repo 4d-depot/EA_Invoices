@@ -1,0 +1,32 @@
+.default {
+	font-family: Segoe UI;
+	font-size: 12px;
+}
+
+.Texts11N {
+	font-family: Arial;
+	font-size: 11px;
+}
+
+.Texts12N {
+	font-family: Arial;
+	font-size: 13px;
+}
+
+.Texts13B {
+	font-family: Arial;
+	font-size: 12px;
+	font-weight: bold;
+}
+
+.Texts13N {
+	font-family: Arial;
+	font-size: 12px;
+}
+
+.Texts14B {
+	font-family: Arial;
+	font-size: 14px;
+	font-weight: bold;
+}
+

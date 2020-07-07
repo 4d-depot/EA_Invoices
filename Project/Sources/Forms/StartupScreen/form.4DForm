@@ -1,0 +1,225 @@
+﻿{
+	"destination": "detailScreen",
+	"windowSizingX": "fixed",
+	"windowSizingY": "fixed",
+	"rightMargin": 0,
+	"bottomMargin": 0,
+	"menuBar": "Menu Bar #1",
+	"markerHeader": 15,
+	"markerBody": 200,
+	"markerBreak": 220,
+	"markerFooter": 240,
+	"events": [
+		"onLoad",
+		"onValidate",
+		"onClick",
+		"onOutsideCall",
+		"onDoubleClick",
+		"onDrop",
+		"onMenuSelect",
+		"onPluginArea",
+		"onDataChange",
+		"onDragOver",
+		"onTimer",
+		"onAfterKeystroke",
+		"onAfterEdit",
+		"onBeginDragOver",
+		"onBoundVariableChange",
+		"onPageChange"
+	],
+	"method": "method.4dm",
+	"pageFormat": {
+		"paperName": "DIN A4",
+		"paperWidth": "842pt",
+		"paperHeight": "595pt"
+	},
+	"pages": [
+		{
+			"objects": {
+				"Rectangle": {
+					"type": "rectangle",
+					"top": 0,
+					"left": 0,
+					"width": 651,
+					"height": 392,
+					"stroke": "#FFFFFF"
+				}
+			}
+		},
+		{
+			"objects": {
+				"_PRODUCTS_Button": {
+					"type": "button",
+					"top": 60,
+					"left": 14,
+					"width": 307,
+					"height": 152,
+					"focusable": false,
+					"icon": "/RESOURCES/Buttons/Access/Produits.png",
+					"textPlacement": "center",
+					"style": "custom",
+					"method": "ObjectMethods/_PRODUCTS_Button.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_CLIENTS_Button": {
+					"type": "button",
+					"top": 60,
+					"left": 332,
+					"width": 305,
+					"height": 152,
+					"focusable": false,
+					"icon": "/RESOURCES/Buttons/Access/Clients.png",
+					"textPlacement": "center",
+					"style": "custom",
+					"method": "ObjectMethods/_CLIENTS_Button.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_INVOICES_Button": {
+					"type": "button",
+					"top": 226,
+					"left": 14,
+					"width": 307,
+					"height": 152,
+					"focusable": false,
+					"icon": "/RESOURCES/Buttons/Access/Factures.png",
+					"textPlacement": "center",
+					"style": "custom",
+					"method": "ObjectMethods/_INVOICES_Button.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_SETTINGS_Button": {
+					"type": "button",
+					"top": 226,
+					"left": 332,
+					"width": 305,
+					"height": 152,
+					"focusable": false,
+					"icon": "/RESOURCES/Buttons/Access/Reglages.png",
+					"textPlacement": "center",
+					"style": "custom",
+					"method": "ObjectMethods/_SETTINGS_Button.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_PRODUCTS_Text": {
+					"type": "input",
+					"top": 123,
+					"left": 118,
+					"width": 192,
+					"height": 26,
+					"stroke": "#FFFFFF",
+					"textAlign": "right",
+					"fontFamily": "Arial",
+					"fontSize": 22,
+					"fontWeight": "bold",
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"method": "ObjectMethods/_PRODUCTS_Text.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_INVOICES_Text": {
+					"type": "input",
+					"top": 289,
+					"left": 118,
+					"width": 192,
+					"height": 26,
+					"stroke": "#FFFFFF",
+					"textAlign": "right",
+					"fontFamily": "Arial",
+					"fontSize": 22,
+					"fontWeight": "bold",
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"method": "ObjectMethods/_INVOICES_Text.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_CLIENTS_Text": {
+					"type": "input",
+					"top": 123,
+					"left": 434,
+					"width": 192,
+					"height": 26,
+					"stroke": "#FFFFFF",
+					"textAlign": "right",
+					"fontFamily": "Arial",
+					"fontSize": 22,
+					"fontWeight": "bold",
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"method": "ObjectMethods/_CLIENTS_Text.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_SETTINGS_Text": {
+					"type": "input",
+					"top": 289,
+					"left": 434,
+					"width": 192,
+					"height": 26,
+					"stroke": "#FFFFFF",
+					"textAlign": "right",
+					"fontFamily": "Arial",
+					"fontSize": 22,
+					"fontWeight": "bold",
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none",
+					"method": "ObjectMethods/_SETTINGS_Text.4dm",
+					"events": [
+						"onClick"
+					]
+				},
+				"_TITLE_": {
+					"type": "input",
+					"top": 14,
+					"left": 16,
+					"width": 621,
+					"height": 32,
+					"sizingX": "grow",
+					"stroke": "#555555",
+					"textAlign": "center",
+					"fontFamily": "Arial",
+					"fontSize": 28,
+					"focusable": false,
+					"fill": "transparent",
+					"borderStyle": "none",
+					"enterable": false,
+					"contextMenu": "none",
+					"dragging": "none",
+					"dropping": "none"
+				}
+			}
+		}
+	]
+}
