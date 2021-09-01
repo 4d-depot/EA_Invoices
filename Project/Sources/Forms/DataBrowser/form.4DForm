@@ -1,4 +1,4 @@
-﻿{
+{
 	"$4d": {
 		"version": "1",
 		"kind": "form"
@@ -109,7 +109,7 @@
 						"onDataChange"
 					]
 				},
-				"Schaltfläche": {
+				"Button": {
 					"type": "button",
 					"text": "Save",
 					"top": 480,
@@ -119,11 +119,12 @@
 					"events": [
 						"onClick"
 					],
-					"method": "ObjectMethods/Schaltfläche.4dm",
+					"method": "ObjectMethods/Button.4dm",
 					"sizingY": "move"
 				}
 			}
 		}
 	],
-	"method": "method.4dm"
+	"method": "method.4dm",
+	"geometryStamp": 1
 }

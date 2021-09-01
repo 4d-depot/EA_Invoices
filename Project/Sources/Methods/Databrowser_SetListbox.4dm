@@ -1,12 +1,12 @@
 //%attributes = {}
-  // set Listbox, define values
-  // Form.listbox entity selection
-  // "list box" is listbox to fill
+// set Listbox, define values
+// Form.listbox entity selection
+// "list box" is listbox to fill
 
 $table:=Form:C1466.listbox.getDataClass()
 $ds:=$table.getDataStore()
 $tablename:=$table.getInfo().name
-LISTBOX DELETE COLUMN:C830(*;"list box";1;100)
+LISTBOX DELETE COLUMN:C830(*; "list box"; 1; 100)
 
 C_POINTER:C301($nullpointer)
 
@@ -14,35 +14,35 @@ $file:=File:C1566("/PACKAGE/Databrowser/"+$tablename+".myPrefs")
 If ($file.exists)
 	$object:=JSON Parse:C1218($file.getText())
 	$counter:=0
-	For each ($column;$object.columns)
+	For each ($column; $object.columns)
 		$counter:=$counter+1
-		LISTBOX INSERT COLUMN FORMULA:C970(*;"List Box";$counter;$column.title;$column.formula;Is text:K8:3;$column.title;$nullpointer->)
-		OBJECT SET TITLE:C194(*;$column.title;$column.title)
-		LISTBOX SET COLUMN WIDTH:C833(*;$column.title;$column.width)
+		LISTBOX INSERT COLUMN FORMULA:C970(*; "List Box"; $counter; $column.title; $column.formula; Is text:K8:3; $column.title; $nullpointer)
+		OBJECT SET TITLE:C194(*; $column.title; $column.title)
+		LISTBOX SET COLUMN WIDTH:C833(*; $column.title; $column.width)
 	End for each 
 	
 	
 Else 
 	
-	  // without defined content we use the first 10 attributes to display
+	// without defined content we use the first 10 attributes to display
 	$counter:=0
-	For each ($field;$table) While ($counter<10)
+	For each ($field; $table) While ($counter<10)
 		$fieldobject:=$table[$field]
 		If ($fieldobject.kind="storage")
 			If (($fieldobject.fieldType#Is BLOB:K8:12) & ($fieldobject.fieldType#Is object:K8:27))
 				$counter:=$counter+1
-				LISTBOX INSERT COLUMN FORMULA:C970(*;"List Box";$counter;$field;"This."+$field;$fieldobject.fieldType;$field;$nullpointer->)
-				OBJECT SET TITLE:C194(*;$field;$field)
+				LISTBOX INSERT COLUMN FORMULA:C970(*; "List Box"; $counter; $field; "This."+$field; $fieldobject.fieldType; $field; $nullpointer)
+				OBJECT SET TITLE:C194(*; $field; $field)
 			End if 
 		End if 
 	End for each 
 End if 
 
-  // build subform
+// build subform
 $page:=New object:C1471
 
 $top:=10
-For each ($field;$table)
+For each ($field; $table)
 	$fieldobject:=$table[$field]
 	If ($fieldobject.kind="storage")
 		If ($fieldobject.fieldType#Is BLOB:K8:12)
@@ -73,12 +73,12 @@ For each ($field;$table)
 				$formobject.sizingY:="grow"
 				$top:=$top+100
 				
-				  // add splitter
+				// add splitter
 				$page[$field+"_"]:=$formobject
 				
 				$formobject:=New object:C1471
 				$formobject.type:="splitter"
-				  //$formobject.dataSource:="Form."+$field
+				//$formobject.dataSource:="Form."+$field
 				$formobject.left:=1
 				$formobject.top:=$top
 				$formobject.width:=390
@@ -93,7 +93,7 @@ For each ($field;$table)
 	End if 
 	
 End for each 
-$subform:=New object:C1471("pages";New collection:C1472(Null:C1517;New object:C1471("objects";$page)))
+$subform:=New object:C1471("pages"; New collection:C1472(Null:C1517; New object:C1471("objects"; $page)))
 
-OBJECT SET SUBFORM:C1138(*;"subform";$subform)
+OBJECT SET SUBFORM:C1138(*; "subform"; $subform)
 
