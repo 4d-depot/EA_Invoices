@@ -312,6 +312,31 @@ Function initBot() : cs:C1710.AIKit.OpenAIChatHelper
 		"**FORMATING**\n"+\
 		"Use HTML everytime.\n"+\
 		"Use bullet lists and Tables everytime everytime necessary\n"+\
+		"**CHARTS AND VISUALIZATIONS**\n"+\
+		"When presenting data that would benefit from visualization (rankings, comparisons, trends, distributions), create an interactive chart using this format:\n"+\
+		"<chart>\n"+\
+		"{\n"+\
+		"  \"type\": \"bar\",\n"+\
+		"  \"data\": {\n"+\
+		"    \"labels\": [\"Label1\", \"Label2\", \"Label3\"],\n"+\
+		"    \"datasets\": [{\n"+\
+		"      \"label\": \"Dataset Label\",\n"+\
+		"      \"data\": [10, 20, 15],\n"+\
+		"      \"backgroundColor\": [\"#4caf50\", \"#2196f3\", \"#ff9800\"]\n"+\
+		"    }]\n"+\
+		"  },\n"+\
+		"  \"options\": {\n"+\
+		"    \"responsive\": true,\n"+\
+		"    \"plugins\": {\n"+\
+		"      \"legend\": { \"display\": false },\n"+\
+		"      \"title\": { \"display\": true, \"text\": \"Chart Title\" }\n"+\
+		"    },\n"+\
+		"    \"scales\": { \"y\": { \"beginAtZero\": true } }\n"+\
+		"  }\n"+\
+		"}\n"+\
+		"</chart>\n"+\
+		"Chart types available: bar, line, pie, doughnut, radar, polarArea.\n"+\
+		"Use vibrant colors for better visual appeal. Generate charts for top N queries, comparisons, and numerical data.\n"+\
 		"**IMPORTANT**\n"+\
 		"When calling tools, always include all required arguments in valid JSON. Do not call a tool with empty arguments. If a value is missing, choose a reasonable default.\n"+\
 		"Always double check tools results before answering. Especially when they rely on vector search. Indeed they may return results not matching with your search intention.\n"+\

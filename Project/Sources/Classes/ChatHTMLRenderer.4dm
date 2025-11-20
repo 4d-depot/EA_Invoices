@@ -109,6 +109,74 @@ Function _hasHTMLTags($content : Text) : Boolean
 	return False
 
 
+Function _detectChartMarker($content : Text) : Object
+	// Detect chart markers like <chart>...</chart> in content
+	// Returns {found: Boolean, startPos: Integer, endPos: Integer, isComplete: Boolean}
+	var $result : Object:={found: False; startPos: 0; endPos: 0; isComplete: False}
+	
+	$result.startPos:=Position("<chart>"; $content)
+	If ($result.startPos>0)
+		$result.found:=True
+		$result.endPos:=Position("</chart>"; $content; $result.startPos)
+		$result.isComplete:=($result.endPos>0)
+	End if 
+	
+	return $result
+
+
+Function _generateChartHTML($chartData : Text; $isStreaming : Boolean; $chartId : Text) : Text
+	// Generate chart HTML with skeleton loader for streaming state
+	var $result : Text
+	var $chartConfig : Object
+	var $containerClass : Text:="chart-container"
+	
+	If ($isStreaming)
+		// Show skeleton loader while streaming
+		$containerClass+=" streaming"
+		$result:="<div class=\""+$containerClass+"\" data-chart-id=\""+$chartId+"\">\n"
+		$result+="<div class=\"chart-skeleton\">\n"
+		$result+="<div class=\"chart-skeleton-title\"></div>\n"
+		$result+="<div class=\"chart-skeleton-body\"></div>\n"
+		$result+="</div>\n"
+		$result+="</div>\n"
+	Else 
+		// Parse complete chart data and render
+		$chartConfig:=This._cleanAndParseJSON($chartData)
+		
+		If ($chartConfig=Null)
+			return "<!-- Invalid chart config -->\n"
+		End if 
+		
+		$result:="<div class=\""+$containerClass+"\" data-chart-id=\""+$chartId+"\">\n"
+		
+		// Check if config has title in options.plugins.title.text
+		var $title : Text:=""
+		If ($chartConfig.options#Null)
+			If ($chartConfig.options.plugins#Null)
+				If ($chartConfig.options.plugins.title#Null)
+					If ($chartConfig.options.plugins.title.text#Null)
+						$title:=String($chartConfig.options.plugins.title.text)
+					End if 
+				End if 
+			End if 
+		End if 
+		
+		// Add title div if present (but Chart.js will also render it)
+		If ($title#"")
+			$result+="<div class=\"chart-title\">"+This._escapeHTML($title)+"</div>\n"
+		End if 
+		
+		// Escape the JSON for HTML attribute
+		var $escapedConfig : Text:=JSON Stringify($chartConfig)
+		$escapedConfig:=Replace string($escapedConfig; "\""; "&quot;"; *)
+		
+		$result+="<canvas id=\""+$chartId+"\" data-chart-config=\""+$escapedConfig+"\"></canvas>\n"
+		$result+="</div>\n"
+	End if 
+	
+	return $result
+
+
 Function _sanitizeIncompleteHTML($content : Text) : Text
 	// Detect and fix incomplete/unclosed HTML tags to prevent layout breaks
 	var $result : Text:=$content
@@ -233,8 +301,50 @@ Function _processThinkSections($content : Text) : Text
 	return $result
 
 
+Function _processChartSections($content : Text) : Text
+	// Process content that contains <chart> sections similar to think sections
+	var $result : Text:=$content
+	var $chartMarker : Object
+	var $beforeChart : Text
+	var $chartContent : Text
+	var $afterChart : Text
+	var $chartHTML : Text
+	var $chartId : Text
+	var $chartCounter : Integer:=1
+	
+	// Process all <chart> sections in the content
+	Repeat 
+		$chartMarker:=This._detectChartMarker($result)
+		
+		If ($chartMarker.found)
+			$chartId:="chart-"+String(Milliseconds)+"-"+String($chartCounter)
+			$chartCounter:=$chartCounter+1
+			
+			If ($chartMarker.isComplete)
+				// Complete chart - parse and render
+				$beforeChart:=Substring($result; 1; $chartMarker.startPos-1)
+				$chartContent:=Substring($result; $chartMarker.startPos+7; $chartMarker.endPos-$chartMarker.startPos-7)
+				$afterChart:=Substring($result; $chartMarker.endPos+8)
+				
+				$chartHTML:=This._generateChartHTML($chartContent; False; $chartId)
+				$result:=$beforeChart+$chartHTML+$afterChart
+			Else 
+				// Streaming chart - show skeleton
+				$beforeChart:=Substring($result; 1; $chartMarker.startPos-1)
+				$chartContent:=Substring($result; $chartMarker.startPos+7)
+				
+				$chartHTML:=This._generateChartHTML($chartContent; True; $chartId)
+				$result:=$beforeChart+$chartHTML
+				break  // Stop processing when streaming
+			End if 
+		End if 
+	Until (Not($chartMarker.found))
+	
+	return $result
+
+
 Function _processRegularContent($content : Text) : Text
-	// Process content without [PERSONS] marker but check for <think> sections
+	// Process content without [PERSONS] marker but check for <think> and <chart> sections
 	var $processedContent : Text:=$content
 	var $cleanContent : Text
 	var $contentHasHTML : Boolean
@@ -247,11 +357,20 @@ Function _processRegularContent($content : Text) : Text
 		$processedContent:=This._processThinkSections($processedContent)
 	End if 
 	
+	// Process <chart> sections BEFORE HTML processing
+	If (Position("<chart>"; $processedContent)>0)
+		$processedContent:=This._processChartSections($processedContent)
+	End if 
+	
 	// Then clean markdown and check for HTML tags
 	$cleanContent:=This._cleanMarkdownCodeBlocks($processedContent)
 	$contentHasHTML:=This._hasHTMLTags($cleanContent)
 	
 	If ($contentHasHTML)
+		// Process charts AFTER cleaning markdown but BEFORE sanitizing
+		If (Position("<chart>"; $cleanContent)>0)
+			$cleanContent:=This._processChartSections($cleanContent)
+		End if 
 		// Sanitize incomplete HTML and wrap
 		$cleanContent:=This._sanitizeIncompleteHTML($cleanContent)
 		return "<div class=\"html-content\">"+$cleanContent+"</div>"

@@ -437,3 +437,82 @@ html {
     color: #1d4ed8;
     text-decoration: underline;
 }
+
+/* Chart styling */
+.chart-container {
+    margin: 16px 0;
+    padding: 16px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    display: block;
+}
+
+.chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+    text-align: center;
+    display: none; /* Hide our title since Chart.js renders its own */
+}
+
+.chart-container canvas {
+    max-width: 100%;
+    height: auto !important;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Chart skeleton loader */
+.chart-container.streaming {
+    min-height: 300px;
+    position: relative;
+}
+
+.chart-skeleton {
+    width: 100%;
+    height: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chart-skeleton-title {
+    height: 20px;
+    width: 40%;
+    margin: 0 auto 16px;
+    background: linear-gradient(
+        90deg,
+        #f3f4f6 0%,
+        #e5e7eb 50%,
+        #f3f4f6 100%
+    );
+    background-size: 200% 100%;
+    border-radius: 4px;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.chart-skeleton-body {
+    flex: 1;
+    background: linear-gradient(
+        90deg,
+        #f3f4f6 0%,
+        #e5e7eb 50%,
+        #f3f4f6 100%
+    );
+    background-size: 200% 100%;
+    border-radius: 8px;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    animation-delay: 0.2s;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}

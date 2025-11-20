@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chat Interface</title>
     <link rel="stylesheet" href="chat-template.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="chat-container">
@@ -85,6 +86,56 @@
             }
         }
         
+        // Store chart instances to prevent memory leaks
+        const chartInstances = {};
+        
+        // Function to render a chart from configuration
+        function renderChart(canvasId, chartConfig) {
+            try {
+                // Destroy existing chart if it exists
+                if (chartInstances[canvasId]) {
+                    chartInstances[canvasId].destroy();
+                    delete chartInstances[canvasId];
+                }
+                
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) {
+                    console.error('Canvas not found:', canvasId);
+                    return;
+                }
+                
+                const ctx = canvas.getContext('2d');
+                chartInstances[canvasId] = new Chart(ctx, chartConfig);
+            } catch (error) {
+                console.error('renderChart error:', error);
+            }
+        }
+        
+        // Function to initialize all charts in the container
+        function initializeCharts() {
+            try {
+                const chartContainers = document.querySelectorAll('.chart-container');
+                chartContainers.forEach(container => {
+                    // Skip streaming chart containers (they show skeleton)
+                    if (container.classList.contains('streaming')) {
+                        return;
+                    }
+                    
+                    const canvas = container.querySelector('canvas');
+                    if (canvas && canvas.dataset.chartConfig) {
+                        try {
+                            const chartConfig = JSON.parse(canvas.dataset.chartConfig);
+                            renderChart(canvas.id, chartConfig);
+                        } catch (e) {
+                            console.error('Failed to parse chart config:', e);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('initializeCharts error:', error);
+            }
+        }
+        
         // Function to update messages via 4D JavaScript injection
         function updateMessages(htmlContent) {
             try {
@@ -94,6 +145,9 @@
                     
                     // Initialize all thinking bubbles
                     initializeThinkingBubbles();
+                    
+                    // Initialize all charts
+                    initializeCharts();
                     
                     // Hide copy buttons on messages with streaming content
                     hideCopyButtonsOnStreaming();
@@ -227,6 +281,7 @@
             console.log('Chat interface ready');
             initLinkTooltips();
             initializeThinkingBubbles();
+            initializeCharts();
         });
     </script>
 </body>

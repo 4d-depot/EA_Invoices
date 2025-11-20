@@ -11,7 +11,8 @@ Class constructor()
 Function formEventHandler($formEventCode : Integer)
 	Case of 
 		: ($formEventCode=On Load:K2:1)
-
+			WA SET PREFERENCE:C1041(*; "Web Area"; WA enable contextual menu:K62:6; True:C214)
+			WA SET PREFERENCE:C1041(*; "Web Area"; WA enable Web inspector:K62:7; True:C214)
 	End case 
 	
 	
@@ -32,7 +33,7 @@ Function btnAskMeEventHandler($formEventCode : Integer)
 	Case of 
 		: ($formEventCode=On Clicked:K2:4)
 			//Form.people:=Null
-			OBJECT SET VISIBLE:C603(*; "btn@"; False:C215)			
+			OBJECT SET VISIBLE:C603(*; "btn@"; False:C215)
 			cs:C1710.AI_ChatWithTools.me.askMe(Form:C1466.prompt; This:C1470)
 			This:C1470.prompt:=""
 	End case 
