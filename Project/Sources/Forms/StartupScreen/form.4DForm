@@ -1,5 +1,7 @@
-﻿{
+{
 	"destination": "detailScreen",
+	"width": 651,
+	"height": 480,
 	"windowSizingX": "fixed",
 	"windowSizingY": "fixed",
 	"rightMargin": 0,
@@ -41,7 +43,7 @@
 					"top": 0,
 					"left": 0,
 					"width": 651,
-					"height": 392,
+					"height": 480,
 					"stroke": "#FFFFFF"
 				}
 			}
@@ -200,6 +202,24 @@
 						"onClick"
 					]
 				},
+				"_AICHAT_Button": {
+					"type": "button",
+					"top": 392,
+					"left": 14,
+					"width": 623,
+					"height": 80,
+					"focusable": false,
+					"textPlacement": "center",
+					"style": "bevel",
+					"text": "AI Chat",
+					"fontFamily": "Arial",
+					"fontSize": 20,
+					"fontWeight": "bold",
+					"method": "ObjectMethods/_AICHAT_Button.4dm",
+					"events": [
+						"onClick"
+					]
+				},
 				"_TITLE_": {
 					"type": "input",
 					"top": 14,
@@ -221,5 +241,17 @@
 				}
 			}
 		}
-	]
+	],
+	"geometryStamp": 5,
+	"$4d": {
+		"version": "1",
+		"kind": "form"
+	},
+	"editor": {
+		"activeView": "View 1",
+		"defaultView": "View 1",
+		"views": {
+			"View 1": {}
+		}
+	}
 }

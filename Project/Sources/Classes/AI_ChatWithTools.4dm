@@ -1,0 +1,347 @@
+property AIClient : cs:C1710.AIKit.OpenAI
+property AIBot : cs:C1710.AIKit.OpenAIChatHelper
+property formObject : Object
+property maxTop : Integer
+
+singleton Class constructor()
+	This:C1470.AIBot:=Null:C1517
+	This:C1470.formObject:=Null:C1517
+	This:C1470.maxTop:=100
+	
+	
+	//MARK: -
+	//MARK: Tools declaration & schema
+	
+Function loadTools()
+	var $toolsFilePath:="/RESOURCES/AITools.json"
+	var $jsonText : Text
+	var $jsonObject : Object
+	var $tool : Object
+	
+	Try
+		$jsonText:=File:C1566($toolsFilePath).getText()
+		$jsonObject:=JSON Parse:C1218($jsonText; Is object:K8:27)
+		For each ($tool; $jsonObject.tools)
+			$tool.handler:=This:C1470
+		End for each 
+		This:C1470.AIBot.registerTools($jsonObject.tools)
+	Catch
+		return 
+	End try
+	
+Function getToolArgumentsSchema($name : Text) : Object
+	var $toolDecl : Object
+	
+	$toolDecl:=This:C1470.AIBot.tools.query("name = :1"; $name).first()
+	return ($toolDecl#Null:C1517) ? $toolDecl.parameters : Null:C1517
+	
+	//MARK: -
+	//MARK: Tools implementation
+	
+Function functionName($callChain : Collection) : Text
+	var $name : Text:=$callChain[0].name
+	
+	Try
+		return Split string:C1554($name; ".")[1]
+	Catch
+		return ""
+	End try
+	
+	
+Function tool_getProducts($input : Object) : Object
+	var $validation; $returnObject : Object
+	var $entities : cs:C1710.PRODUCTSSelection:=ds:C1482.PRODUCTS.all()
+	
+	$validation:=JSON Validate:C1456($input; This:C1470.getToolArgumentsSchema(This:C1470.functionName(Call chain:C1662)))
+	If (Not:C34($validation.success))
+		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
+	End if 
+	
+	$input.ID:=($input.ID) || "any"
+	$input.Reference:=($input.Reference) || "@"
+	$input.Name:=($input.Name) || "@"
+	$input.Sale_Price:=$input.Sale_Price || {}
+	$input.Sale_Price.min:=$input.Sale_Price.min || 0
+	$input.Sale_Price.max:=$input.Sale_Price.max || 999999
+	$input.orderBy:=($input.orderBy) || {}
+	$input.orderBy.field:=($input.orderBy.field) || "Name"
+	$input.orderBy.order:=($input.orderBy.order) || "asc"
+	$input.top:=($input.top) || This:C1470.maxTop
+	
+	$returnObject:={}
+	$returnObject.form:="Products"
+	$returnObject.dataClass:="PRODUCTS"
+	$returnObject.counts:={}
+	$returnObject.counts.total:=$entities.length
+	
+	If ($input.ID#"any")
+		$entities:=$entities.query("ID = :1"; $input.ID)
+	End if 
+	
+	$entities:=$entities.query("Reference = :1 and Name = :2 and Sale_Price >= :3 and Sale_Price <= :4 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Reference; $input.Name; $input.Sale_Price.min; $input.Sale_Price.max)
+	$returnObject.counts.totalFiltered:=$entities.length
+	If ($returnObject.totalEntities>$input.top)
+		$entities:=$entities.slice(0; $input.top)
+	End if 
+	$returnObject.counts.totalSent:=$entities.length
+	$returnObject.entities:=$entities.toCollection("ID, Reference, Name, Sale_Price")
+	
+	return $returnObject
+	
+Function tool_getClients($input : Object) : Object
+	var $validation; $returnObject : Object
+	var $entities : cs:C1710.CLIENTSSelection:=ds:C1482.CLIENTS.all()
+	
+	$validation:=JSON Validate:C1456($input; This:C1470.getToolArgumentsSchema(This:C1470.functionName(Call chain:C1662)))
+	If (Not:C34($validation.success))
+		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
+	End if 
+	
+	$input.ID:=($input.ID) || "any"
+	$input.Name:=($input.Name) || "@"
+	$input.Contact:=($input.Contact) || "@"
+	$input.Total_Sales:=$input.Total_Sales || {}
+	$input.Total_Sales.min:=$input.Total_Sales.min || 0
+	$input.Total_Sales.max:=$input.Total_Sales.max || 9999999
+	$input.orderBy:=($input.orderBy) || {}
+	$input.orderBy.field:=($input.orderBy.field) || "Name"
+	$input.orderBy.order:=($input.orderBy.order) || "asc"
+	$input.top:=($input.top) || This:C1470.maxTop
+	
+	$returnObject:={}
+	$returnObject.form:="Clients"
+	$returnObject.dataClass:="CLIENTS"
+	$returnObject.counts:={}
+	$returnObject.counts.total:=$entities.length
+	
+	If ($input.ID#"any")
+		$entities:=$entities.query("ID = :1"; $input.ID)
+	End if 
+	
+	$entities:=$entities.query("Name = :1 and Contact = :2 and Total_Sales >= :3 and Total_Sales <= :4 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Name; $input.Contact; $input.Total_Sales.min; $input.Total_Sales.max)
+	$returnObject.counts.totalFiltered:=$entities.length
+	If ($returnObject.totalEntities>$input.top)
+		$entities:=$entities.slice(0; $input.top)
+	End if 
+	$returnObject.counts.totalSent:=$entities.length
+	$returnObject.entities:=$entities.toCollection("ID, Name, Contact, City, State, Country, Discount_Rate, Total_Sales, Comments")
+	
+	return $returnObject
+	
+	
+Function tool_getInvoices($input : Object) : Object
+	var $validation; $returnObject : Object
+	var $entities : cs:C1710.INVOICESSelection:=ds:C1482.INVOICES.all()
+	
+	$validation:=JSON Validate:C1456($input; This:C1470.getToolArgumentsSchema(This:C1470.functionName(Call chain:C1662)))
+	If (Not:C34($validation.success))
+		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
+	End if 
+	
+	$input.Invoice_Number:=($input.Invoice_Number) || "@"
+	$input.Client_ID:=($input.Client_ID) || "any"
+	$input.Total:=$input.Total || {}
+	$input.Total.min:=$input.Total.min || 0
+	$input.Total.max:=$input.Total.max || 9999999
+	$input.orderBy:=($input.orderBy) || {}
+	$input.orderBy.field:=($input.orderBy.field) || "Total"
+	$input.orderBy.order:=($input.orderBy.order) || "desc"
+	$input.top:=($input.top) || This:C1470.maxTop
+	
+	$returnObject:={}
+	$returnObject.form:="Invoices"
+	$returnObject.dataClass:="INVOICES"
+	$returnObject.counts:={}
+	$returnObject.counts.total:=$entities.length
+	
+	If ($input.Client_ID#"any")
+		$entities:=$entities.query("Client_ID = :1"; $input.Client_ID)
+	End if 
+	
+	$entities:=$entities.query("Invoice_Number = :1 and Total >= :2 and Total <= :3 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Invoice_Number; $input.Total.min; $input.Total.max)
+	$returnObject.counts.totalFiltered:=$entities.length
+	If ($returnObject.totalEntities>$input.top)
+		$entities:=$entities.slice(0; $input.top)
+	End if 
+	$returnObject.counts.totalSent:=$entities.length
+	$returnObject.entities:=$entities.toCollection("ID, Invoice_Number, Client_ID, Creation_Date, Paid, Payment_Date, Total")
+	
+	return $returnObject
+	
+Function tool_getInvoiceLines($input : Object) : Object
+	var $validation; $returnObject : Object
+	var $entities : cs:C1710.INVOICE_LINESSelection:=ds:C1482.INVOICE_LINES.all()
+	
+	$validation:=JSON Validate:C1456($input; This:C1470.getToolArgumentsSchema(This:C1470.functionName(Call chain:C1662)))
+	If (Not:C34($validation.success))
+		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
+	End if 
+	
+	$input.Invoice_Number:=($input.Invoice_Number) || "@"
+	$input.Client_ID:=($input.Client_ID) || "any"
+	$input.Product_ID:=($input.Product_ID) || "any"
+	$input.Invoice_ID:=($input.Invoice_ID) || "any"
+	$input.Quantity:=$input.Quantity || {}
+	$input.Quantity.min:=$input.Quantity.min || 0
+	$input.Quantity.max:=$input.Quantity.max || 9999999
+	$input.Total:=$input.Total || {}
+	$input.Total.min:=$input.Total.min || 0
+	$input.Total.max:=$input.Total.max || 9999999
+	$input.orderBy:=($input.orderBy) || {}
+	$input.orderBy.field:=($input.orderBy.field) || "Total"
+	$input.orderBy.order:=($input.orderBy.order) || "desc"
+	$input.top:=($input.top) || This:C1470.maxTop
+	
+	$returnObject:={}
+	$returnObject.form:="not available"
+	$returnObject.dataClass:="INVOICE_LINES"
+	$returnObject.counts:={}
+	$returnObject.counts.total:=$entities.length
+	
+	If ($input.Client_ID#"any")
+		$entities:=$entities.query("Invoice.Client_ID = :1"; $input.Client_ID)
+	End if 
+	
+	If ($input.Invoice_Number#"any")
+		$entities:=$entities.query("Invoice.Invoice_Number = :1"; $input.Invoice_Number)
+	End if 
+	
+	If ($input.Product_ID#"any")
+		$entities:=$entities.query("Product_ID = :1"; $input.Product_ID)
+	End if 
+	
+	If ($input.Invoice_ID#"any")
+		$entities:=$entities.query("Invoice_ID = :1"; $input.Invoice_ID)
+	End if 
+	
+	$entities:=$entities.query("Total >= :1 and Total <= :2 and Quantity >= :3 and Quantity <= :4 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Total.min; $input.Total.max; $input.Quantity.min; $input.Quantity.max)
+	$returnObject.counts.totalFiltered:=$entities.length
+	If ($returnObject.totalEntities>$input.top)
+		$entities:=$entities.slice(0; $input.top)
+	End if 
+	$returnObject.counts.totalSent:=$entities.length
+	$returnObject.entities:=$entities.toCollection("ID, Line_Number, Invoice.Invoice_Number, Invoice.Client_ID, Total, Quantity, Product.ID")
+	
+	return $returnObject
+	
+	
+	//MARK: -
+	//MARK: onStreamTerminate and onStreamData
+	
+	
+Function onStreamTerminate($result : cs:C1710.AIKit.OpenAIChatCompletionsResult)
+	var $me:=cs:C1710.AI_ChatWithTools.me
+	
+	If (Not:C34($result.success))
+		ALERT:C41("Problem querying AI provider, please try again. Error: "+$result.errors[0].message)
+		return 
+	End if 
+	
+	$me.formObject.terminateChat()
+	
+Function onStreamData($result : cs:C1710.AIKit.OpenAIChatCompletionsResult)
+	var $me:=cs:C1710.AI_ChatWithTools.me
+	
+	If (Not:C34($result.success))
+		ALERT:C41("Problem querying AI provider, please try again. Error: "+$result.errors[0].message)
+		return 
+	End if 
+	
+	If (Not:C34(Undefined:C82($me.AIBot.messages)))
+		$me.formObject.progressChat({messages: $me.AIBot.messages})
+	End if 
+	
+	
+	
+	//MARK: -
+	//MARK: AIBot management functions
+	
+Function resetContext()
+	This:C1470.AIClient:=Null:C1517
+	This:C1470.AIBot:=Null:C1517
+	
+Function relationsInfos() : Collection
+	var $info; $relation; $field : Object
+	var $relations : Collection
+	
+	$info:=cs:C1710.StructureInfo.me.get()
+	$relations:=$info.relation.copy()
+	$relations:=$relations.extract("name_1toN"; "name_1toN"; "name_Nto1"; "name_Nto1"; "related_field"; "related_field")
+	For each ($relation; $relations)
+		For each ($field; $relation.related_field)
+			OB REMOVE:C1226($field.field_ref; "uuid")
+			OB REMOVE:C1226($field.field_ref.table_ref; "uuid")
+			$field.field_ref.dataClass:=$field.field_ref.table_ref
+			OB REMOVE:C1226($field.field_ref; "table_ref")
+		End for each 
+	End for each 
+	return $relations
+	
+Function initBot() : cs:C1710.AIKit.OpenAIChatHelper
+	var $systemPrompt : Text
+	var $options:=cs:C1710.AIKit.OpenAIChatCompletionsParameters.new()
+	var $provider : Object
+	var $relations : Collection:=This:C1470.relationsInfos()
+	
+	Try
+		$provider:=JSON Parse:C1218(File:C1566("/RESOURCES/AIProvider.json").getText(); Is object:K8:27)
+	Catch
+		ALERT:C41("Missing or corrupted AI Provider settings file.\nMake sure your /RESOURCES/AIProvider.json is formatted properly")
+		return Null:C1517
+	End try
+	
+	This:C1470.AIClient:=cs:C1710.AIKit.OpenAI.new($provider.reasoning.key)
+	If ($provider.reasoning.url#"")
+		This:C1470.AIClient.baseURL:=$provider.reasoning.url
+	End if 
+	
+	$options.model:=$provider.reasoning.model
+	$options.stream:=True:C214
+	$options.onData:=This:C1470.onStreamData
+	$options.onTerminate:=This:C1470.onStreamTerminate
+	$options.tool_choice:="auto"  //fixme: check if 'any'
+	
+	$systemPrompt:="You are a helpful assistant. I need your help to answer questions data stored in my application.\n"+\
+		"**CONTEXT**\n"+\
+		"The application stores data about invoices, products and clients"+\
+		"In some cases, you'll need to cross query several tables (dataClasses) in order to answer. To help you, here are the application relations between tables (dataClasses):\n"+\
+		JSON Stringify:C1217($relations)+"\n"+\
+		"**INSTRUCTIONS**\n"+\
+		"Analyze questions and answer step by step.\n"+\
+		"Use the tools at your disposal to answer everytime you think they are relevant.\n"+\
+		"**FORMATING**\n"+\
+		"Use HTML everytime.\n"+\
+		"Use bullet lists and Tables everytime everytime necessary\n"+\
+		"**IMPORTANT**\n"+\
+		"When calling tools, always include all required arguments in valid JSON. Do not call a tool with empty arguments. If a value is missing, choose a reasonable default.\n"+\
+		"Always double check tools results before answering. Especially when they rely on vector search. Indeed they may return results not matching with your search intention.\n"+\
+		"When tool callings returns data not related with the initial question, or that you cannot use to answer, avoid detailing such results too much and stay short.\n"+\
+		"**CUSTOM URL HANDLING**\n"+\
+		"Tools responses give information about the form to open when available, the dataClass and entities ID\n"+\
+		"When you display any element coming from a tool response, you must use a custom url so that the user can open the corresponding form\n"+\
+		"Such custom url must follow the following syntax examples:\n"+\
+		"<a href=\"myapp://openform?form=Products&dataClass=PRODUCTS&entities=989511\">A single product</a>\n"+\
+		"<a href=\"myapp://openform?form=Invoices&dataClass=INVOICESS&entities=654KJY\">A list of invoices</a>\n"+\
+		"**NOTES**:\n"+\
+		"The end-user sometimes asks irrelevant questions, not related to persons, skills, job position or locations.\n"+\
+		"In such case, and only in such case, do not execute any tool and invite the user to ask more appropriate questions.\n"
+	
+	This:C1470.AIBot:=This:C1470.AIClient.chat.create($systemPrompt; $options)
+	This:C1470.loadTools()
+	
+	return This:C1470.AIBot
+	
+	
+	//MARK: -
+	//MARK: Main entry point: askMe function
+Function askMe($prompt : Text; $formObject : Object)
+	This:C1470.formObject:=$formObject
+	
+	This:C1470.AIBot:=(This:C1470.AIBot) || This:C1470.initBot()
+	return (This:C1470.AIBot) ? This:C1470.AIBot.prompt($prompt) : This:C1470.formObject.terminateChat()
+	
+	
+	
+	
+	
+	

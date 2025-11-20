@@ -1,11 +1,11 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE base SYSTEM "http://www.4d.com/dtd/2007/base.dtd" >
-<base name="" uuid="652F3EA1E604344993D38C88D5949740" collation_locale="en">
+<base name="Invoices" uuid="652F3EA1E604344993D38C88D5949740" collation_locale="en">
 	<schema name="DEFAULT_SCHEMA"/>
 	<table name="CLIENTS" uuid="D51B26D316C37D4BA9AB081E94BAF6C3" id="1">
 		<field name="ID" uuid="9B79A7051949394E8001F9367CE27A4A" type="4" unique="true" autosequence="true" never_null="true" id="1">
 			<field_extra modifiable="false" mandatory="true" enumeration_id="-1">
-				<tip>The client ID				</tip>
+				<tip><![CDATA[The client ID				]]></tip>
 				<editor_field_info>
 					<color red="0" green="158" blue="96" alpha="255"/>
 				</editor_field_info>
@@ -13,37 +13,37 @@
 		</field>
 		<field name="Name" uuid="05839FF04D458F468E8112DC7DAC5746" type="10" limiting_length="40" never_null="true" id="2">
 			<field_extra enumeration_id="-1">
-				<tip>The client name				</tip>
+				<tip><![CDATA[The client name				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Address" uuid="3F23EA6282305B499902A3A731ECED8A" type="10" never_null="true" id="3">
 			<field_extra enumeration_id="-1">
-				<tip>The client address 1				</tip>
+				<tip><![CDATA[The client address 1				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Numbers" uuid="A1828146FB60E144AE9782DBDBD189C3" type="21" blob_switch_size="2147483647" never_null="true" id="4">
 			<field_extra>
-				<tip>The client address 2				</tip>
+				<tip><![CDATA[The client address 2				]]></tip>
 			</field_extra>
 		</field>
 		<field name="City" uuid="76E1DD90E3AE57449F3A409EE113DE17" type="10" limiting_length="40" never_null="true" id="5">
 			<field_extra enumeration_id="-1">
-				<tip>The client zip code				</tip>
+				<tip><![CDATA[The client zip code				]]></tip>
 			</field_extra>
 		</field>
 		<field name="State" uuid="520C14B3605DD641914F09979248706C" type="10" limiting_length="40" never_null="true" id="6">
 			<field_extra enumeration_id="-1">
-				<tip>The client city				</tip>
+				<tip><![CDATA[The client city				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Zip_Code" uuid="F56D291137F7204CB2805BFA5DCCF3E0" type="10" limiting_length="10" never_null="true" id="7">
 			<field_extra enumeration_id="-1">
-				<tip>The client telephone				</tip>
+				<tip><![CDATA[The client telephone				]]></tip>
 			</field_extra>
 		</field>
 		<field name="_Phone" uuid="74DF181AACE1954E814939361D8052D0" type="10" limiting_length="20" never_null="true" id="8">
 			<field_extra visible="false">
-				<tip>The client fax				</tip>
+				<tip><![CDATA[The client fax				]]></tip>
 				<editor_field_info>
 					<color red="191" green="48" blue="181" alpha="255"/>
 				</editor_field_info>
@@ -51,7 +51,7 @@
 		</field>
 		<field name="_Mobile" uuid="B49637A98019C54AB310E273E30E17EA" type="10" limiting_length="20" never_null="true" id="9">
 			<field_extra visible="false">
-				<tip>The client email				</tip>
+				<tip><![CDATA[The client email				]]></tip>
 				<editor_field_info>
 					<color red="191" green="48" blue="181" alpha="255"/>
 				</editor_field_info>
@@ -59,7 +59,7 @@
 		</field>
 		<field name="_Fax" uuid="4CF83296DF144840A35BDC7DFC0352D1" type="10" limiting_length="20" never_null="true" id="10">
 			<field_extra visible="false">
-				<tip>The client web site				</tip>
+				<tip><![CDATA[The client web site				]]></tip>
 				<editor_field_info>
 					<color red="191" green="48" blue="181" alpha="255"/>
 				</editor_field_info>
@@ -67,7 +67,7 @@
 		</field>
 		<field name="_Email" uuid="16FE49DAF81A414FADB8E861435B5F14" type="10" limiting_length="80" never_null="true" id="11">
 			<field_extra visible="false">
-				<tip>The client logo				</tip>
+				<tip><![CDATA[The client logo				]]></tip>
 				<editor_field_info>
 					<color red="191" green="48" blue="181" alpha="255"/>
 				</editor_field_info>
@@ -75,7 +75,7 @@
 		</field>
 		<field name="_Web_Site" uuid="4E79CDAE3219514EA18681AF5422FB6B" type="10" limiting_length="80" never_null="true" id="12">
 			<field_extra visible="false">
-				<tip>The client contact				</tip>
+				<tip><![CDATA[The client contact				]]></tip>
 				<editor_field_info>
 					<color red="191" green="48" blue="181" alpha="255"/>
 				</editor_field_info>
@@ -83,12 +83,12 @@
 		</field>
 		<field name="Logo" uuid="1F077809CC510841A3B55399B077139E" type="12" never_null="true" id="13">
 			<field_extra enumeration_id="-1">
-				<tip>Comments on client				</tip>
+				<tip><![CDATA[Comments on client				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Contact" uuid="4ABCFF394CCEB74EBE85685BB3CCFC8E" type="10" limiting_length="80" never_null="true" id="14">
 			<field_extra enumeration_id="-1">
-				<tip>The client total sales				</tip>
+				<tip><![CDATA[The client total sales				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Comments" uuid="542481867A8BEB40823B282AAE4E5E1A" type="10" never_null="true" id="15"/>
@@ -109,7 +109,7 @@
 	<table name="INVOICES" uuid="689F27F44AE5FA43B1D357F9A3A43468" id="2">
 		<field name="ID" uuid="76B6BD940327F94EB5051C7503283164" type="4" unique="true" autosequence="true" never_null="true" id="1">
 			<field_extra modifiable="false" mandatory="true" multi_line="false">
-				<tip>The invoice id				</tip>
+				<tip><![CDATA[The invoice id				]]></tip>
 				<editor_field_info>
 					<color red="204" green="122" blue="2" alpha="255"/>
 				</editor_field_info>
@@ -117,7 +117,7 @@
 		</field>
 		<field name="Invoice_Number" uuid="BF4FE4186E0A7540A128D92A2FB088A6" type="10" limiting_length="20" never_null="true" id="2">
 			<field_extra enumeration_id="-1">
-				<tip>The invoice number				</tip>
+				<tip><![CDATA[The invoice number				]]></tip>
 				<editor_field_info>
 					<color red="255" green="255" blue="255" alpha="0"/>
 				</editor_field_info>
@@ -125,7 +125,7 @@
 		</field>
 		<field name="Client_ID" uuid="05CAAB266618E342B11B9DA211DD71C5" type="4" never_null="true" id="3">
 			<field_extra>
-				<tip>The client id				</tip>
+				<tip><![CDATA[The client id				]]></tip>
 				<editor_field_info>
 					<color red="0" green="153" blue="181" alpha="255"/>
 				</editor_field_info>
@@ -133,42 +133,42 @@
 		</field>
 		<field name="Creation_Date" uuid="A3556A9DC2264041AC05A98937803DAC" type="8" never_null="true" id="4">
 			<field_extra enumeration_id="-1">
-				<tip>The invoice date				</tip>
+				<tip><![CDATA[The invoice date				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Subtotal_BT" uuid="4BA3D50625DE1D4EBB179BAA4148F9B1" type="6" never_null="true" id="5">
 			<field_extra enumeration_id="-1">
-				<tip>The invoice subtotal				</tip>
+				<tip><![CDATA[The invoice subtotal				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Tax" uuid="45FDC54BA63DD94481E93F085D760C6C" type="6" never_null="true" id="6">
 			<field_extra enumeration_id="-1">
-				<tip>The invoice tax (VAT)				</tip>
+				<tip><![CDATA[The invoice tax (VAT)				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Total" uuid="893DE7C2FB70A34093350EF73A5B4058" type="6" never_null="true" id="7">
 			<field_extra enumeration_id="-1">
-				<tip>The invoice total				</tip>
+				<tip><![CDATA[The invoice total				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Paid" uuid="F9DC932EA147554EB8470AED346E6BA9" type="1" never_null="true" id="8">
 			<field_extra enumeration_id="-1">
-				<tip>True if the invoice is payed				</tip>
+				<tip><![CDATA[True if the invoice is payed				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Payment_Date" uuid="2FCF0CFF4FC6E541B928A09BA9064F9E" type="8" never_null="true" id="9">
 			<field_extra enumeration_id="-1">
-				<tip>The invoice payement date				</tip>
+				<tip><![CDATA[The invoice payement date				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Payment_Method" uuid="8B227AE27151B245BEB52E570910E17D" type="10" limiting_length="30" never_null="true" id="10">
 			<field_extra enumeration_id="-1">
-				<tip>The invoice payement method				</tip>
+				<tip><![CDATA[The invoice payement method				]]></tip>
 			</field_extra>
 		</field>
 		<field name="Payment_Reference" uuid="94C7CCAA717808449F1D29F205847213" type="10" never_null="true" id="11">
 			<field_extra enumeration_id="-1">
-				<tip>The invoice payement reference				</tip>
+				<tip><![CDATA[The invoice payement reference				]]></tip>
 			</field_extra>
 		</field>
 		<field name="ProForma" uuid="65CC25BF8F98EF4E80DB47FF499D5FE5" type="1" never_null="true" id="12"/>
@@ -302,7 +302,7 @@
 		<table_extra input_form="" output_form="">
 			<editor_table_info displayable_fields_count="7">
 				<color red="255" green="255" blue="255" alpha="0"/>
-				<coordinates left="27.109375" top="508.1953125" width="161.1640625" height="196.1328125"/>
+				<coordinates left="24.640625" top="497.42578125" width="161.1640625" height="196.1328125"/>
 			</editor_table_info>
 		</table_extra>
 	</table>
@@ -316,11 +316,11 @@
 		<table_extra input_form="" output_form="">
 			<editor_table_info fields_ordering="1" displayable_fields_count="5">
 				<color red="255" green="255" blue="255" alpha="0"/>
-				<coordinates left="227.3125" top="515.453125" width="171.6953125" height="159.7890625"/>
+				<coordinates left="222.4453125" top="500.984375" width="171.6953125" height="159.7890625"/>
 			</editor_table_info>
 		</table_extra>
 	</table>
-	<relation uuid="DB086A51B8E14040AF27F65CE8ADC66E" name_Nto1="Product" name_1toN="Lines_Fm_Product" auto_load_Nto1="true" auto_load_1toN="true" foreign_key="false" state="1">
+	<relation uuid="DB086A51B8E14040AF27F65CE8ADC66E" name_Nto1="Product" name_1toN="Lines_Fm_Product" auto_load_Nto1="true" auto_load_1toN="true" state="1">
 		<related_field kind="source">
 			<field_ref uuid="48C015E83E297B48A2C0618CF0E41FFA" name="Product_ID">
 				<table_ref uuid="C1146E075B67B24CAA3D4910AC2ED24C" name="INVOICE_LINES"/>
@@ -337,7 +337,7 @@
 			</editor_relation_info>
 		</relation_extra>
 	</relation>
-	<relation uuid="E102AD0611DC5F4ABC678BF2FAA3355B" name_Nto1="Invoice" name_1toN="Lines_Fm_Invoices" auto_load_Nto1="true" auto_load_1toN="true" foreign_key="false" state="1" integrity="delete">
+	<relation uuid="E102AD0611DC5F4ABC678BF2FAA3355B" name_Nto1="Invoice" name_1toN="Lines_Fm_Invoices" auto_load_Nto1="true" auto_load_1toN="true" state="1" integrity="delete">
 		<related_field kind="source">
 			<field_ref uuid="FB780D6B09568846B8220AF0CAC3DA26" name="Invoice_ID">
 				<table_ref uuid="C1146E075B67B24CAA3D4910AC2ED24C" name="INVOICE_LINES"/>
@@ -354,7 +354,7 @@
 			</editor_relation_info>
 		</relation_extra>
 	</relation>
-	<relation uuid="ED0E940B7BA7AE4B99C3F957045694F1" name_Nto1="Client" name_1toN="Invoice_List" auto_load_Nto1="true" auto_load_1toN="true" foreign_key="false" state="1" integrity="reject">
+	<relation uuid="ED0E940B7BA7AE4B99C3F957045694F1" name_Nto1="Client" name_1toN="Invoice_List" auto_load_Nto1="true" auto_load_1toN="true" state="1" integrity="reject">
 		<related_field kind="source">
 			<field_ref uuid="05CAAB266618E342B11B9DA211DD71C5" name="Client_ID">
 				<table_ref uuid="689F27F44AE5FA43B1D357F9A3A43468" name="INVOICES"/>
@@ -501,5 +501,5 @@
 			<table_ref uuid="C1146E075B67B24CAA3D4910AC2ED24C" name="INVOICE_LINES"/>
 		</field_ref>
 	</index>
-	<base_extra __stringCompHash="icu:63.1.0" __keywordBuildingHash="icu:63.1.0" package_name="InvoicesAdminDemo" structure_file_name="InvoicesAdminDemo" data_file_path=":InvoicesAdminDemo.4DD"/>
+	<base_extra package_name="InvoicesAdminDemo" structure_file_name="InvoicesAdminDemo" data_file_path=":InvoicesAdminDemo.4DD"/>
 </base>

@@ -1,0 +1,184 @@
+{
+	"$4d": {
+		"version": "1",
+		"kind": "form"
+	},
+	"windowSizingX": "variable",
+	"windowSizingY": "variable",
+	"windowMinWidth": 0,
+	"windowMinHeight": 0,
+	"windowMaxWidth": 32767,
+	"windowMaxHeight": 32767,
+	"rightMargin": 0,
+	"bottomMargin": 0,
+	"events": [
+		"onLoad",
+		"onPageChange",
+		"onValidate",
+		"onClick",
+		"onDoubleClick",
+		"onOutsideCall",
+		"onBeginDragOver",
+		"onDragOver",
+		"onDrop",
+		"onAfterKeystroke",
+		"onMenuSelect",
+		"onPluginArea",
+		"onAfterEdit",
+		"onTimer",
+		"onBoundVariableChange"
+	],
+	"windowTitle": "",
+	"destination": "detailScreen",
+	"pages": [
+		{
+			"objects": {
+				"Rectangle1": {
+					"type": "rectangle",
+					"top": -1,
+					"left": 0,
+					"width": 985,
+					"height": 40,
+					"sizingX": "grow",
+					"fill": "#3D85E1",
+					"stroke": "#3D85E1"
+				},
+				"Text1": {
+					"type": "text",
+					"top": 11,
+					"left": 55,
+					"width": 152,
+					"height": 16,
+					"stroke": "#FFFFFF",
+					"class": "Texts13B",
+					"text": "Chat"
+				},
+				"Text2": {
+					"type": "text",
+					"top": 7,
+					"left": 27,
+					"width": 25,
+					"height": 23,
+					"stroke": "#FFFFFF",
+					"class": "Texts13B",
+					"text": "AI",
+					"fontSize": 20
+				},
+				"Rectangle3": {
+					"type": "rectangle",
+					"top": 40,
+					"left": 0,
+					"width": 985,
+					"height": 65,
+					"sizingX": "grow",
+					"stroke": "#FFFFFF"
+				}
+			}
+		},
+		{
+			"objects": {
+				"Rectangle": {
+					"type": "rectangle",
+					"top": 40,
+					"left": 0,
+					"width": 986,
+					"height": 860,
+					"right": 986,
+					"bottom": 900,
+					"strokeWidth": 0,
+					"stroke": "transparent"
+				},
+				"Rectangle2": {
+					"type": "rectangle",
+					"top": 757,
+					"left": 15,
+					"width": 959,
+					"height": 131,
+					"borderRadius": 20,
+					"stroke": "#E8E8E8",
+					"fill": "#F2F2F2",
+					"strokeWidth": 2
+				},
+				"Input": {
+					"type": "input",
+					"left": 31,
+					"top": 770,
+					"width": 929,
+					"height": 109,
+					"fontFamily": "Avenir Light",
+					"fontSize": 13,
+					"fill": "transparent",
+					"dataSource": "Form:C1466.prompt",
+					"placeholder": "Ask anything",
+					"borderStyle": "none",
+					"borderRadius": 8,
+					"hideFocusRing": true,
+					"events": [
+						"onDataChange"
+					],
+					"method": ""
+				},
+				"btnAskMe": {
+					"type": "button",
+					"text": "🚀",
+					"top": 846,
+					"left": 833,
+					"width": 60,
+					"height": 36,
+					"events": [
+						"onClick"
+					],
+					"borderStyle": "none",
+					"method": "ObjectMethods/btnAskMe.4dm",
+					"defaultButton": false
+				},
+				"btnNewChat": {
+					"type": "button",
+					"text": "🗑️",
+					"top": 846,
+					"left": 900,
+					"width": 60,
+					"height": 36,
+					"events": [
+						"onClick"
+					],
+					"borderStyle": "none",
+					"method": "ObjectMethods/btnNewChat.4dm",
+					"defaultButton": false
+				},
+				"Web Area": {
+					"type": "webArea",
+					"left": 15,
+					"top": 64,
+					"width": 959,
+					"height": 686,
+					"webEngine": "embedded",
+					"borderStyle": "none",
+					"methodsAccessibility": "all",
+					"events": [
+						"onLoad",
+						"onURLFiltering"
+					],
+					"method": "ObjectMethods/Web Area.4dm"
+				}
+			},
+			"entryOrder": [
+				"Input",
+				"btnAskMe",
+				"btnNewChat",
+				"Web Area"
+			]
+		}
+	],
+	"geometryStamp": 2720,
+	"editor": {
+		"activeView": "View 1",
+		"defaultView": "View 1",
+		"views": {
+			"View 1": {}
+		}
+	},
+	"method": "method.4dm",
+	"formClass": "formAIChat",
+	"menuBar": "Menu Bar #1"
+}

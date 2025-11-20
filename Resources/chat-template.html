@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <link rel="stylesheet" href="chat-template.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Messages will be injected here -->
+    </div>
+    
+    <!-- Link hover tooltip -->
+    <div class="link-tooltip" id="linkTooltip"></div>
+    
+    <script>
+        // Function to copy assistant message content to clipboard
+        function copyMessageContent(button, messageIndex) {
+            try {
+                // Get the message content element
+                const messageDiv = button.closest('.assistant-message');
+                const contentDiv = messageDiv.querySelector('.message-content');
+                
+                // Clone the content to avoid modifying the original
+                const clonedContent = contentDiv.cloneNode(true);
+                
+                // Remove tool call elements from the clone (they're not part of the message content)
+                const toolCalls = clonedContent.querySelectorAll('.tool-call');
+                toolCalls.forEach(tc => tc.remove());
+                
+                // Remove think-tag elements
+                const thinkTags = clonedContent.querySelectorAll('.think-tag');
+                thinkTags.forEach(tag => tag.remove());
+                
+                // Get HTML content with inline styles for better compatibility
+                let htmlContent = clonedContent.innerHTML;
+                
+                // Apply inline styles to tables for better paste compatibility
+                htmlContent = htmlContent.replace(/<table/g, '<table style="border-collapse: collapse; width: 100%; margin: 12px 0;"');
+                htmlContent = htmlContent.replace(/<th/g, '<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; background: #f8fafc; font-weight: 600;"');
+                htmlContent = htmlContent.replace(/<td/g, '<td style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;"');
+                htmlContent = htmlContent.replace(/<tr/g, '<tr style="border-bottom: 1px solid #e5e7eb;"');
+                
+                // Extract plain text as fallback
+                let textContent = clonedContent.textContent.trim();
+                
+                // Copy both HTML and plain text to clipboard
+                const clipboardItem = new ClipboardItem({
+                    'text/html': new Blob([htmlContent], { type: 'text/html' }),
+                    'text/plain': new Blob([textContent], { type: 'text/plain' })
+                });
+                
+                navigator.clipboard.write([clipboardItem]).then(() => {
+                    // Update button appearance
+                    const originalText = button.textContent;
+                    button.textContent = 'Copied!';
+                    button.classList.add('copied');
+                    
+                    // Reset after 2 seconds
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.classList.remove('copied');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    // Fallback to plain text only
+                    navigator.clipboard.writeText(textContent).then(() => {
+                        button.textContent = 'Copied!';
+                        button.classList.add('copied');
+                        setTimeout(() => {
+                            button.textContent = 'Copy';
+                            button.classList.remove('copied');
+                        }, 2000);
+                    }).catch(err2 => {
+                        console.error('Fallback copy failed:', err2);
+                        button.textContent = 'Failed';
+                        setTimeout(() => {
+                            button.textContent = 'Copy';
+                        }, 2000);
+                    });
+                });
+            } catch (error) {
+                console.error('copyMessageContent error:', error);
+            }
+        }
+        
+        // Function to update messages via 4D JavaScript injection
+        function updateMessages(htmlContent) {
+            try {
+                const container = document.querySelector('.chat-container');
+                if (container) {
+                    container.innerHTML = htmlContent;
+                    
+                    // Initialize all thinking bubbles
+                    initializeThinkingBubbles();
+                    
+                    // Hide copy buttons on messages with streaming content
+                    hideCopyButtonsOnStreaming();
+                    
+                    // Scroll to bottom smoothly
+                    setTimeout(() => {
+                        window.scrollTo({
+                            top: document.body.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('updateMessages error:', error);
+            }
+        }
+        
+        // Function to hide copy buttons when streaming content is present
+        function hideCopyButtonsOnStreaming() {
+            const messages = document.querySelectorAll('.assistant-message');
+            messages.forEach(message => {
+                const hasStreaming = message.querySelector('.streaming');
+                const copyButton = message.querySelector('.copy-button');
+                if (copyButton) {
+                    if (hasStreaming) {
+                        copyButton.style.display = 'none';
+                    } else {
+                        copyButton.style.display = '';
+                    }
+                }
+            });
+        }
+        
+        // Function to initialize thinking bubbles with expand/collapse functionality
+        function initializeThinkingBubbles() {
+            const thinkTags = document.querySelectorAll('.think-tag');
+            
+            thinkTags.forEach(thinkTag => {
+                const content = thinkTag.textContent.trim();
+                const isStreaming = thinkTag.classList.contains('streaming');
+                
+                if (isStreaming) {
+                    // Streaming: show full content with icon
+                    thinkTag.innerHTML = `<span class="thinking-icon">💭</span> ${escapeHtml(content)}`;
+                } else if (content.length > 0) {
+                    // Complete: show summary with expand toggle
+                    const summary = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+                    const thinkingId = 'thinking-' + Math.random().toString(36).substr(2, 9);
+                    
+                    thinkTag.innerHTML = `
+                        <span class="thinking-icon">💭</span>
+                        <span class="thinking-summary">${escapeHtml(summary)}</span>
+                        <span class="thinking-full" style="display: none;">${escapeHtml(content)}</span>
+                        <button class="thinking-toggle" data-target="${thinkingId}">▼</button>
+                    `;
+                    thinkTag.classList.add('collapsed');
+                    thinkTag.querySelector('.thinking-full').id = thinkingId;
+                    
+                    // Add click handler to the whole bubble
+                    thinkTag.addEventListener('click', function(e) {
+                        toggleThinking(thinkingId);
+                    });
+                }
+            });
+        }
+        
+        // Function to toggle thinking bubble expansion
+        function toggleThinking(thinkingId) {
+            const fullContent = document.getElementById(thinkingId);
+            if (!fullContent) return;
+            
+            const thinkTag = fullContent.closest('.think-tag');
+            const summary = thinkTag.querySelector('.thinking-summary');
+            const toggle = thinkTag.querySelector('.thinking-toggle');
+            
+            if (thinkTag.classList.contains('collapsed')) {
+                // Expand with fade in
+                summary.classList.add('hiding');
+                setTimeout(() => {
+                    summary.style.display = 'none';
+                    fullContent.style.display = 'inline';
+                    // Force reflow
+                    fullContent.offsetHeight;
+                    fullContent.classList.add('visible');
+                }, 200);
+                toggle.textContent = '▲';
+                thinkTag.classList.remove('collapsed');
+            } else {
+                // Collapse with fade out
+                fullContent.classList.remove('visible');
+                setTimeout(() => {
+                    fullContent.style.display = 'none';
+                    summary.style.display = 'inline';
+                    summary.classList.remove('hiding');
+                }, 200);
+                toggle.textContent = '▼';
+                thinkTag.classList.add('collapsed');
+            }
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Link hover tooltip functionality
+        function initLinkTooltips() {
+            const tooltip = document.getElementById('linkTooltip');
+            
+            // Add listeners to all links
+            document.addEventListener('mouseover', function(e) {
+                const link = e.target.closest('a');
+                if (link && link.href) {
+                    tooltip.textContent = link.href;
+                    tooltip.classList.add('visible');
+                }
+            });
+            
+            document.addEventListener('mouseout', function(e) {
+                const link = e.target.closest('a');
+                if (link) {
+                    tooltip.classList.remove('visible');
+                }
+            });
+        }
+        
+        // Initialize smooth scrolling and link tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Chat interface ready');
+            initLinkTooltips();
+            initializeThinkingBubbles();
+        });
+    </script>
+</body>
+</html>

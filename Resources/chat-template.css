@@ -1,0 +1,439 @@
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+}
+
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
+    background: #fff; 
+    color: #000; 
+    overflow-x: hidden; 
+    font-size: 14px; 
+}
+
+.chat-container { 
+    max-width: 768px; 
+    margin: 0 auto; 
+    padding: 20px; 
+}
+
+.message { 
+    margin-bottom: 24px; 
+    opacity: 1; 
+}
+
+.user-message { 
+    display: flex; 
+    justify-content: flex-end; 
+}
+
+.assistant-message { 
+    display: flex; 
+    justify-content: flex-start; 
+    position: relative;
+}
+
+.message-content { 
+    line-height: 1.6; 
+    max-width: 85%; 
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow: hidden;
+}
+
+.copy-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 11px;
+    color: #6b7280;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.assistant-message:hover .copy-button {
+    opacity: 1;
+}
+
+.copy-button:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.copy-button:active {
+    background: #d1d5db;
+}
+
+.copy-button.copied {
+    background: #dcfce7;
+    color: #16a34a;
+    border-color: #86efac;
+}
+
+.user-message .message-content { 
+    background: #f7f7f8; 
+    color: #000; 
+    padding: 12px 16px; 
+    border-radius: 18px; 
+}
+
+.assistant-message .message-content { 
+    color: #000;
+    width: 100%;
+}
+
+.html-content {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.html-content > * {
+    max-width: 100%;
+}
+
+.html-content h1, .html-content h2, .html-content h3,
+.html-content h4, .html-content h5, .html-content h6 {
+    margin: 12px 0 8px 0;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.html-content h1 { font-size: 18px; }
+.html-content h2 { font-size: 16px; }
+.html-content h3 { font-size: 15px; }
+
+.html-content p {
+    margin: 8px 0;
+}
+
+.html-content ul, .html-content ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.html-content li {
+    margin: 4px 0;
+}
+
+.tool-call { 
+    background: #f8f9fa; 
+    border: 1px solid #e9ecef; 
+    border-radius: 12px; 
+    padding: 6px 10px; 
+    margin: 4px 0; 
+    display: inline-block; 
+    font-size: 12px; 
+}
+
+.tool-name { 
+    font-weight: 600; 
+    color: #d97706; 
+    margin: 0; 
+    font-size: 12px; 
+    display: inline; 
+}
+
+.tool-args { 
+    background: transparent; 
+    border-radius: 0; 
+    padding: 0; 
+    font-family: inherit; 
+    font-size: 12px; 
+    display: inline; 
+    margin-left: 6px; 
+}
+
+.tool-args-header { 
+    display: none; 
+}
+
+.arg-item { 
+    margin: 0; 
+    display: inline; 
+}
+
+.arg-key { 
+    color: #6b7280; 
+    font-weight: 500; 
+    min-width: auto; 
+}
+
+.arg-value { 
+    color: #374151; 
+    word-break: break-word; 
+}
+
+.arg-separator { 
+    color: #9ca3af; 
+    margin: 0 4px; 
+}
+
+/* Base tag styles - common properties */
+.think-tag { 
+    border-radius: 12px; 
+    padding: 6px 12px; 
+    font-size: 12px; 
+    font-weight: 500; 
+    display: inline-block; 
+    margin: 8px 0; 
+    transition: all 0.3s ease;
+    background: #fef3c7; 
+    color: #d97706; 
+    border: 1px solid #fbbf24; 
+}
+
+.think-tag.collapsed {
+    cursor: pointer;
+    user-select: none;
+}
+
+.think-tag .thinking-icon {
+    margin-right: 4px;
+}
+
+.think-tag .thinking-summary {
+    cursor: pointer;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.think-tag .thinking-summary.hiding {
+    opacity: 0;
+    transform: translateY(-2px);
+}
+
+.think-tag .thinking-full {
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.think-tag .thinking-full.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.think-tag.collapsed .thinking-summary {
+    display: inline;
+}
+
+.think-tag.collapsed .thinking-full {
+    display: none;
+}
+
+.thinking-toggle {
+    background: transparent;
+    border: none;
+    color: #d97706;
+    cursor: pointer;
+    font-size: 10px;
+    margin-left: 6px;
+    padding: 0 4px;
+    vertical-align: middle;
+    transition: transform 0.2s ease;
+}
+
+.thinking-toggle:hover {
+    transform: scale(1.2);
+}
+
+/* Streaming states */
+.think-tag.streaming { 
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+    animation: heartbeat 2.2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+        transform: scale(1);
+        font-size: 12px;
+    }
+    25% {
+        box-shadow: 0 0 14px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.2);
+        transform: scale(1.015);
+        font-size: 12.2px;
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        transform: scale(1.005);
+        font-size: 12.1px;
+    }
+    75% {
+        box-shadow: 0 0 16px rgba(59, 130, 246, 0.6), 0 0 24px rgba(59, 130, 246, 0.25);
+        transform: scale(1.02);
+        font-size: 12.3px;
+    }
+}
+
+.streaming-args { 
+    opacity: 0.8; 
+    border-left: 3px solid #fbbf24; 
+}
+
+.thinking { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+    color: #9ca3af; 
+    font-style: italic; 
+    margin-top: 8px; 
+}
+
+.thinking.completed { 
+    color: #10b981; 
+    font-style: normal; 
+}
+
+/* Table styling */
+table { 
+    width: 100% !important; 
+    border-collapse: collapse !important; 
+    margin: 12px 0 !important; 
+    background: white !important; 
+    border-radius: 8px; 
+    overflow: hidden; 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+thead, tbody, tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+th, td { 
+    padding: 12px !important; 
+    text-align: left !important; 
+    border-bottom: 1px solid #e5e7eb !important;
+    word-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: 1px solid #e5e7eb !important;
+}
+
+th { 
+    background: #f8fafc !important; 
+    font-weight: 600; 
+    color: #374151; 
+}
+
+th { 
+    background: #f8fafc; 
+    font-weight: 600; 
+    color: #374151; 
+}
+
+tr:hover { 
+    background: #f9fafb; 
+}
+
+tr:last-child td { 
+    border-bottom: none; 
+}
+
+/* Tool call spinner animation */
+.tool-spinner {
+    display: inline-block;
+    animation: spin 2s linear infinite;
+    color: #fbbf24;
+    transform-origin: center;
+}
+
+/* Tool icon SVG */
+.tool-icon {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: text-top;
+    margin-right: 4px;
+}
+
+.tool-icon img {
+    width: 100%;
+    height: 100%;
+    opacity: 0.7;
+}
+
+.tool-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: text-top;
+    margin-right: 4px;
+}
+
+.tool-spinner::before {
+    content: '';
+    display: block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #e5e7eb;
+    border-top: 2px solid #6b7280;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Animations */
+@keyframes spin { 
+    0% { transform: rotate(0deg); } 
+    100% { transform: rotate(360deg); } 
+}
+
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+html { 
+    scroll-behavior: smooth; 
+}
+
+/* Link hover tooltip */
+.link-tooltip {
+    position: fixed;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    z-index: 10000;
+    pointer-events: none;
+    max-width: 500px;
+    word-break: break-all;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.link-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Link styling */
+.html-content a {
+    color: #2563eb;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.html-content a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
