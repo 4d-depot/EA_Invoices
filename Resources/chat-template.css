@@ -330,12 +330,6 @@ th {
     color: #374151; 
 }
 
-th { 
-    background: #f8fafc; 
-    font-weight: 600; 
-    color: #374151; 
-}
-
 tr:hover { 
     background: #f9fafb; 
 }
@@ -344,15 +338,7 @@ tr:last-child td {
     border-bottom: none; 
 }
 
-/* Tool call spinner animation */
-.tool-spinner {
-    display: inline-block;
-    animation: spin 2s linear infinite;
-    color: #fbbf24;
-    transform-origin: center;
-}
-
-/* Tool icon SVG */
+/* Tool icon and spinner styles */
 .tool-icon {
     display: inline-block;
     width: 14px;
@@ -390,11 +376,6 @@ tr:last-child td {
 @keyframes spin { 
     0% { transform: rotate(0deg); } 
     100% { transform: rotate(360deg); } 
-}
-
-@keyframes fadeIn { 
-    from { opacity: 0; transform: translateY(10px); } 
-    to { opacity: 1; transform: translateY(0); } 
 }
 
 html { 

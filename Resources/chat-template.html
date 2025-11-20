@@ -16,6 +16,27 @@
     <div class="link-tooltip" id="linkTooltip"></div>
     
     <script>
+        // Helper to apply inline styles to HTML tables for clipboard compatibility
+        function applyInlineStylesToTables(html) {
+            return html
+                .replace(/<table/g, '<table style="border-collapse: collapse; width: 100%; margin: 12px 0;"')
+                .replace(/<th/g, '<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; background: #f8fafc; font-weight: 600;"')
+                .replace(/<td/g, '<td style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;"')
+                .replace(/<tr/g, '<tr style="border-bottom: 1px solid #e5e7eb;"');
+        }
+        
+        // Helper to update button feedback state
+        function updateCopyButtonState(button, text, cssClass, duration = 2000) {
+            const originalText = button.textContent;
+            button.textContent = text;
+            if (cssClass) button.classList.add(cssClass);
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                if (cssClass) button.classList.remove(cssClass);
+            }, duration);
+        }
+        
         // Function to copy assistant message content to clipboard
         function copyMessageContent(button, messageIndex) {
             try {
@@ -34,14 +55,8 @@
                 const thinkTags = clonedContent.querySelectorAll('.think-tag');
                 thinkTags.forEach(tag => tag.remove());
                 
-                // Get HTML content with inline styles for better compatibility
-                let htmlContent = clonedContent.innerHTML;
-                
-                // Apply inline styles to tables for better paste compatibility
-                htmlContent = htmlContent.replace(/<table/g, '<table style="border-collapse: collapse; width: 100%; margin: 12px 0;"');
-                htmlContent = htmlContent.replace(/<th/g, '<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; background: #f8fafc; font-weight: 600;"');
-                htmlContent = htmlContent.replace(/<td/g, '<td style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;"');
-                htmlContent = htmlContent.replace(/<tr/g, '<tr style="border-bottom: 1px solid #e5e7eb;"');
+                // Get HTML content with inline styles for better paste compatibility
+                const htmlContent = applyInlineStylesToTables(clonedContent.innerHTML);
                 
                 // Extract plain text as fallback
                 let textContent = clonedContent.textContent.trim();
@@ -52,35 +67,18 @@
                     'text/plain': new Blob([textContent], { type: 'text/plain' })
                 });
                 
-                navigator.clipboard.write([clipboardItem]).then(() => {
-                    // Update button appearance
-                    const originalText = button.textContent;
-                    button.textContent = 'Copied!';
-                    button.classList.add('copied');
-                    
-                    // Reset after 2 seconds
-                    setTimeout(() => {
-                        button.textContent = originalText;
-                        button.classList.remove('copied');
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy:', err);
-                    // Fallback to plain text only
-                    navigator.clipboard.writeText(textContent).then(() => {
-                        button.textContent = 'Copied!';
-                        button.classList.add('copied');
-                        setTimeout(() => {
-                            button.textContent = 'Copy';
-                            button.classList.remove('copied');
-                        }, 2000);
-                    }).catch(err2 => {
-                        console.error('Fallback copy failed:', err2);
-                        button.textContent = 'Failed';
-                        setTimeout(() => {
-                            button.textContent = 'Copy';
-                        }, 2000);
+                navigator.clipboard.write([clipboardItem])
+                    .then(() => updateCopyButtonState(button, 'Copied!', 'copied'))
+                    .catch(err => {
+                        console.error('Failed to copy:', err);
+                        // Fallback to plain text only
+                        navigator.clipboard.writeText(textContent)
+                            .then(() => updateCopyButtonState(button, 'Copied!', 'copied'))
+                            .catch(err2 => {
+                                console.error('Fallback copy failed:', err2);
+                                updateCopyButtonState(button, 'Failed', null);
+                            });
                     });
-                });
             } catch (error) {
                 console.error('copyMessageContent error:', error);
             }
@@ -161,17 +159,6 @@
             }
         }
         
-        // Simple hash function to detect config changes
-        function hashString(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32bit integer
-            }
-            return hash.toString();
-        }
-        
         // Function to update messages via 4D JavaScript injection
         function updateMessages(htmlContent) {
             try {
@@ -197,13 +184,11 @@
                     
                     newCharts.forEach(newChart => {
                         const chartId = newChart.getAttribute('data-chart-id');
+                        const existingChart = chartId && existingChartsMap.get(chartId);
                         
-                        if (chartId && existingChartsMap.has(chartId)) {
-                            const existingChart = existingChartsMap.get(chartId);
-                            // Only restore if it was already rendered (not streaming)
-                            if (existingChart.getAttribute('data-chart-rendered') === 'true') {
-                                newChart.replaceWith(existingChart);
-                            }
+                        // Restore rendered chart if exists (existingChartsMap only contains rendered charts)
+                        if (existingChart) {
+                            newChart.replaceWith(existingChart);
                         }
                     });
                     

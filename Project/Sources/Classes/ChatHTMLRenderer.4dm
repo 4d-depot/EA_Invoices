@@ -146,22 +146,11 @@ Function _generateChartHTML($chartData : Text; $isStreaming : Boolean; $chartId 
 		
 		$result:="<div class=\""+$containerClass+"\" data-chart-id=\""+$chartId+"\" data-chart-rendered=\"false\">\n"
 		
-		// Check if config has title in options.plugins.title.text
-		var $title : Text:=""
-		If ($chartConfig.options#Null)
-			If ($chartConfig.options.plugins#Null)
-				If ($chartConfig.options.plugins.title#Null)
-					If ($chartConfig.options.plugins.title.text#Null)
-						$title:=String($chartConfig.options.plugins.title.text)
-					End if 
-				End if 
-			End if 
-		End if 
-		
-		// Add title div if present (but Chart.js will also render it)
+		// Extract title from chart config if present
+		var $title : Text:=This._extractChartTitle($chartConfig)
 		If ($title#"")
 			$result+="<div class=\"chart-title\">"+This._escapeHTML($title)+"</div>\n"
-		End if 
+		End if
 		
 		// Escape the JSON for HTML attribute
 		var $escapedConfig : Text:=JSON Stringify($chartConfig)
@@ -172,6 +161,20 @@ Function _generateChartHTML($chartData : Text; $isStreaming : Boolean; $chartId 
 	End if 
 	
 	return $result
+
+
+Function _extractChartTitle($chartConfig : Object) : Text
+	// Extract title from chart configuration
+	If ($chartConfig.options#Null)
+		If ($chartConfig.options.plugins#Null)
+			If ($chartConfig.options.plugins.title#Null)
+				If ($chartConfig.options.plugins.title.text#Null)
+					return String($chartConfig.options.plugins.title.text)
+				End if 
+			End if 
+		End if 
+	End if 
+	return ""
 
 
 Function _sanitizeIncompleteHTML($content : Text) : Text
@@ -365,13 +368,9 @@ Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 	$contentHasHTML:=This._hasHTMLTags($cleanContent)
 	
 	If ($contentHasHTML)
-		// Process charts AFTER cleaning markdown but BEFORE sanitizing
-		If (Position("<chart>"; $cleanContent)>0)
-			$cleanContent:=This._processChartSections($cleanContent; $messageIndex)
-		End if 
 		// Sanitize incomplete HTML and wrap
 		$cleanContent:=This._sanitizeIncompleteHTML($cleanContent)
-		return "<div class=\"html-content\">"+$cleanContent+"</div>"
+		return "<div class=\"html-content\">"+ $cleanContent+"</div>"
 	Else 
 		return This._escapeHTML($processedContent)  // Escape the processed content (after think processing)
 	End if
@@ -379,14 +378,16 @@ Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 
 Function _hasIncompleteToolArgs($toolCall : Object) : Boolean
 	// Check if tool call has incomplete or missing arguments
-	If ($toolCall.function.arguments=Null) || ($toolCall.function.arguments="")
-		return True  // No arguments at all
+	var $args : Text:=$toolCall.function.arguments
+	If ($args=Null) || ($args="")
+		return True
 	End if 
 	
 	// Try to parse JSON arguments
+	var $parsed : Object
 	Try
-		var $testArgs : Object:=JSON Parse($toolCall.function.arguments; Is object)
-		return ($testArgs=Null)
+		$parsed:=JSON Parse($args; Is object)
+		return ($parsed=Null)
 	Catch
 		return True  // Parse error means incomplete
 	End try
@@ -411,58 +412,55 @@ Function _hasToolResponse($toolCall : Object; $messages : Collection; $currentIn
 
 Function _renderToolCallArgs($toolCall : Object) : Text
 	// Render tool call arguments as HTML
-	var $result : Text
-	var $toolArgs : Object
-	var $argKey : Text
 	var $argumentsText : Text:=$toolCall.function.arguments
+	var $toolArgs : Object
+	var $result : Text
+	var $argKey : Text
+	var $argCount : Integer
+	var $argValue : Text
 	
 	If ($argumentsText=Null) || ($argumentsText="")
 		return ""
 	End if 
 	
 	// Try to parse JSON arguments
-	var $parseError : Boolean:=False
 	Try
 		$toolArgs:=JSON Parse($argumentsText; Is object)
-		If ($toolArgs=Null)
-			$parseError:=True
-		End if 
 	Catch
-		$parseError:=True
+		// If JSON parsing fails (incomplete stream), show raw arguments
+		return "<span class=\"tool-args\">"+This._escapeHTML($argumentsText)+"</span>"
 	End try
 	
-	If ($parseError)
-		// If JSON parsing fails (incomplete stream), show raw arguments
-		$result:="<span class=\"tool-args\">"+This._escapeHTML($argumentsText)+"</span>"
-	Else 
-		// Successfully parsed JSON - show as compact key:value pairs
-		$result:="<span class=\"tool-args\">"
-		var $argCount : Integer:=0
-		For each ($argKey; $toolArgs)
+	If ($toolArgs=Null)
+		return "<span class=\"tool-args\">"+This._escapeHTML($argumentsText)+"</span>"
+	End if 
+	
+	// Successfully parsed JSON - show as compact key:value pairs
+	$result:="<span class=\"tool-args\">"
+	$argCount:=0
+	For each ($argKey; $toolArgs)
 			If ($argCount>0)
 				$result+="<span class=\"arg-separator\">,</span>"
 			End if 
-			$result+="<span class=\"arg-key\">"+This._escapeHTML($argKey)+":</span>"
-			// Handle both primitive values and objects/collections
-			var $argValue : Text
-			Case of 
-				: (Value type($toolArgs[$argKey])=Is object) || (Value type($toolArgs[$argKey])=Is collection)
-					$argValue:=JSON Stringify($toolArgs[$argKey])
-				Else 
-					$argValue:=String($toolArgs[$argKey])
-			End case 
-			$result+="<span class=\"arg-value\">"+This._escapeHTML($argValue)+"</span>"
-			$argCount:=$argCount+1
-		End for each 
-		$result+="</span>"
-	End if 
+		$result+="<span class=\"arg-key\">"+This._escapeHTML($argKey)+":</span>"
+		// Handle both primitive values and objects/collections
+		Case of 
+			: (Value type($toolArgs[$argKey])=Is object) || (Value type($toolArgs[$argKey])=Is collection)
+				$argValue:=JSON Stringify($toolArgs[$argKey])
+			Else 
+				$argValue:=String($toolArgs[$argKey])
+		End case 
+		$result+="<span class=\"arg-value\">"+This._escapeHTML($argValue)+"</span>"
+		$argCount:=$argCount+1
+	End for each 
+	$result+="</span>"
 	
 	return $result
 
 
 Function _processToolCalls($message : Object; $messages : Collection; $currentIndex : Integer) : Text
 	// Process all tool calls for a message
-	var $result : Text
+	var $result : Text:=""
 	var $toolCall : Object
 	
 	// Render each tool call with appropriate icon
@@ -520,9 +518,6 @@ Function getInitialHTML() : Text
 Function generateMessagesHTML($messages : Collection) : Text
 	// Generates only the messages HTML content (not the full page)
 	var $message : Object
-	var $toolCall : Object
-	var $toolArgs : Object
-	var $argKey : Text
 	var $content : Text
 	var $i : Integer
 	var $result : Text
