@@ -104,6 +104,17 @@
                     return;
                 }
                 
+                // Set maintainAspectRatio based on chart type
+                if (!chartConfig.options) {
+                    chartConfig.options = {};
+                }
+                
+                // For pie/doughnut charts, maintain aspect ratio to keep them circular
+                // For other charts, allow stretching to fill container
+                const isPieChart = chartConfig.type === 'pie' || chartConfig.type === 'doughnut';
+                chartConfig.options.maintainAspectRatio = isPieChart;
+                chartConfig.options.aspectRatio = isPieChart ? 1 : 2;
+                
                 const ctx = canvas.getContext('2d');
                 chartInstances[canvasId] = new Chart(ctx, chartConfig);
             } catch (error) {
@@ -115,17 +126,31 @@
         function initializeCharts() {
             try {
                 const chartContainers = document.querySelectorAll('.chart-container');
+                
                 chartContainers.forEach(container => {
+                    const chartId = container.getAttribute('data-chart-id');
+                    const isStreaming = container.classList.contains('streaming');
+                    const rendered = container.getAttribute('data-chart-rendered');
+                    
                     // Skip streaming chart containers (they show skeleton)
-                    if (container.classList.contains('streaming')) {
+                    if (isStreaming) {
+                        return;
+                    }
+                    
+                    // Skip if already rendered (using data attribute flag)
+                    if (rendered === 'true') {
                         return;
                     }
                     
                     const canvas = container.querySelector('canvas');
                     if (canvas && canvas.dataset.chartConfig) {
+                        const canvasId = canvas.id;
+                        
                         try {
                             const chartConfig = JSON.parse(canvas.dataset.chartConfig);
-                            renderChart(canvas.id, chartConfig);
+                            renderChart(canvasId, chartConfig);
+                            // Mark as rendered
+                            container.setAttribute('data-chart-rendered', 'true');
                         } catch (e) {
                             console.error('Failed to parse chart config:', e);
                         }
@@ -136,17 +161,56 @@
             }
         }
         
+        // Simple hash function to detect config changes
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return hash.toString();
+        }
+        
         // Function to update messages via 4D JavaScript injection
         function updateMessages(htmlContent) {
             try {
                 const container = document.querySelector('.chat-container');
                 if (container) {
+                    // Get all RENDERED chart containers from current DOM (preserve the actual DOM element, not a clone)
+                    const existingCharts = container.querySelectorAll('.chart-container[data-chart-rendered="true"]');
+                    const existingChartsMap = new Map();
+                    
+                    existingCharts.forEach(chart => {
+                        const chartId = chart.getAttribute('data-chart-id');
+                        if (chartId) {
+                            // Store the actual DOM element (with live Chart.js instance)
+                            existingChartsMap.set(chartId, chart);
+                        }
+                    });
+                    
+                    // Replace the container content
                     container.innerHTML = htmlContent;
+                    
+                    // Restore existing rendered charts by replacing the new placeholders
+                    const newCharts = container.querySelectorAll('.chart-container');
+                    
+                    newCharts.forEach(newChart => {
+                        const chartId = newChart.getAttribute('data-chart-id');
+                        
+                        if (chartId && existingChartsMap.has(chartId)) {
+                            const existingChart = existingChartsMap.get(chartId);
+                            // Only restore if it was already rendered (not streaming)
+                            if (existingChart.getAttribute('data-chart-rendered') === 'true') {
+                                newChart.replaceWith(existingChart);
+                            }
+                        }
+                    });
                     
                     // Initialize all thinking bubbles
                     initializeThinkingBubbles();
                     
-                    // Initialize all charts
+                    // Initialize only NEW charts (not yet rendered)
                     initializeCharts();
                     
                     // Hide copy buttons on messages with streaming content

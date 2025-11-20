@@ -131,13 +131,10 @@ Function _generateChartHTML($chartData : Text; $isStreaming : Boolean; $chartId 
 	var $containerClass : Text:="chart-container"
 	
 	If ($isStreaming)
-		// Show skeleton loader while streaming
+		// Show skeleton loader while streaming - use simple CSS-based skeleton like tool-spinner
 		$containerClass+=" streaming"
 		$result:="<div class=\""+$containerClass+"\" data-chart-id=\""+$chartId+"\">\n"
-		$result+="<div class=\"chart-skeleton\">\n"
-		$result+="<div class=\"chart-skeleton-title\"></div>\n"
-		$result+="<div class=\"chart-skeleton-body\"></div>\n"
-		$result+="</div>\n"
+		$result+="<span class=\"chart-skeleton\"></span>\n"
 		$result+="</div>\n"
 	Else 
 		// Parse complete chart data and render
@@ -147,7 +144,7 @@ Function _generateChartHTML($chartData : Text; $isStreaming : Boolean; $chartId 
 			return "<!-- Invalid chart config -->\n"
 		End if 
 		
-		$result:="<div class=\""+$containerClass+"\" data-chart-id=\""+$chartId+"\">\n"
+		$result:="<div class=\""+$containerClass+"\" data-chart-id=\""+$chartId+"\" data-chart-rendered=\"false\">\n"
 		
 		// Check if config has title in options.plugins.title.text
 		var $title : Text:=""
@@ -301,7 +298,7 @@ Function _processThinkSections($content : Text) : Text
 	return $result
 
 
-Function _processChartSections($content : Text) : Text
+Function _processChartSections($content : Text; $messageIndex : Integer) : Text
 	// Process content that contains <chart> sections similar to think sections
 	var $result : Text:=$content
 	var $chartMarker : Object
@@ -317,7 +314,8 @@ Function _processChartSections($content : Text) : Text
 		$chartMarker:=This._detectChartMarker($result)
 		
 		If ($chartMarker.found)
-			$chartId:="chart-"+String(Milliseconds)+"-"+String($chartCounter)
+			// Use message index + counter for stable IDs across streaming updates
+			$chartId:="chart-msg"+String($messageIndex)+"-"+String($chartCounter)
 			$chartCounter:=$chartCounter+1
 			
 			If ($chartMarker.isComplete)
@@ -343,7 +341,7 @@ Function _processChartSections($content : Text) : Text
 	return $result
 
 
-Function _processRegularContent($content : Text) : Text
+Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 	// Process content without [PERSONS] marker but check for <think> and <chart> sections
 	var $processedContent : Text:=$content
 	var $cleanContent : Text
@@ -359,7 +357,7 @@ Function _processRegularContent($content : Text) : Text
 	
 	// Process <chart> sections BEFORE HTML processing
 	If (Position("<chart>"; $processedContent)>0)
-		$processedContent:=This._processChartSections($processedContent)
+		$processedContent:=This._processChartSections($processedContent; $messageIndex)
 	End if 
 	
 	// Then clean markdown and check for HTML tags
@@ -369,7 +367,7 @@ Function _processRegularContent($content : Text) : Text
 	If ($contentHasHTML)
 		// Process charts AFTER cleaning markdown but BEFORE sanitizing
 		If (Position("<chart>"; $cleanContent)>0)
-			$cleanContent:=This._processChartSections($cleanContent)
+			$cleanContent:=This._processChartSections($cleanContent; $messageIndex)
 		End if 
 		// Sanitize incomplete HTML and wrap
 		$cleanContent:=This._sanitizeIncompleteHTML($cleanContent)
@@ -551,7 +549,7 @@ Function generateMessagesHTML($messages : Collection) : Text
 				
 				// Handle content if present (show before tool calls)
 				If ($message.content#Null) && ($message.content#"")
-					$content:=This._processRegularContent($message.content)
+					$content:=This._processRegularContent($message.content; $i)
 					$result+=$content+"\n"
 				End if 
 				
