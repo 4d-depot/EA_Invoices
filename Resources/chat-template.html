@@ -37,6 +37,85 @@
             }, duration);
         }
         
+        // Function to copy table to clipboard in Excel-compatible format
+        function copyTableToExcel(button) {
+            try {
+                const table = button.closest('table');
+                if (!table) return;
+                
+                // Extract table data
+                let tsvData = '';
+                let htmlData = '<table border="1" cellspacing="0" cellpadding="4">';
+                
+                // Process header rows - check both thead and first row if no thead
+                let headerRows = table.querySelectorAll('thead tr');
+                if (headerRows.length === 0) {
+                    // No thead, check if first row has th elements
+                    const firstRow = table.querySelector('tr');
+                    if (firstRow && firstRow.querySelector('th')) {
+                        headerRows = [firstRow];
+                    }
+                }
+                
+                headerRows.forEach(row => {
+                    const cells = row.querySelectorAll('th');
+                    if (cells.length > 0) {
+                        const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+                        tsvData += rowData.join('\t') + '\n';
+                        htmlData += '<tr>' + Array.from(cells).map(cell => `<th>${cell.textContent.trim()}</th>`).join('') + '</tr>';
+                    }
+                });
+                
+                // Process body rows
+                const bodyRows = table.querySelectorAll('tbody tr');
+                if (bodyRows.length === 0) {
+                    // No tbody, get all tr elements except those already processed as headers
+                    const allRows = table.querySelectorAll('tr');
+                    allRows.forEach(row => {
+                        // Skip if this row only has th elements (it's a header)
+                        if (row.querySelector('th') && !row.querySelector('td')) return;
+                        
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length > 0) {
+                            const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+                            tsvData += rowData.join('\t') + '\n';
+                            htmlData += '<tr>' + Array.from(cells).map(cell => `<td>${cell.textContent.trim()}</td>`).join('') + '</tr>';
+                        }
+                    });
+                } else {
+                    bodyRows.forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+                        tsvData += rowData.join('\t') + '\n';
+                        htmlData += '<tr>' + Array.from(cells).map(cell => `<td>${cell.textContent.trim()}</td>`).join('') + '</tr>';
+                    });
+                }
+                
+                htmlData += '</table>';
+                
+                // Copy both TSV (for Excel) and HTML (for Word/Docs) to clipboard
+                const clipboardItem = new ClipboardItem({
+                    'text/html': new Blob([htmlData], { type: 'text/html' }),
+                    'text/plain': new Blob([tsvData], { type: 'text/plain' })
+                });
+                
+                navigator.clipboard.write([clipboardItem])
+                    .then(() => updateCopyButtonState(button, 'Copied!', 'copied'))
+                    .catch(err => {
+                        console.error('Failed to copy table:', err);
+                        // Fallback to TSV only
+                        navigator.clipboard.writeText(tsvData)
+                            .then(() => updateCopyButtonState(button, 'Copied!', 'copied'))
+                            .catch(err2 => {
+                                console.error('Fallback copy failed:', err2);
+                                updateCopyButtonState(button, 'Failed', null);
+                            });
+                    });
+            } catch (error) {
+                console.error('copyTableToExcel error:', error);
+            }
+        }
+        
         // Function to copy assistant message content to clipboard
         async function copyMessageContent(button, messageIndex) {
             try {
@@ -159,34 +238,7 @@
             }
         }
         
-        // Function to remove incomplete rows from tables
-        function processTableSkeletons() {
-            try {
-                const assistantMessages = document.querySelectorAll('.message.assistant');
-                
-                assistantMessages.forEach(message => {
-                    const messageHTML = message.innerHTML;
-                    const tables = message.querySelectorAll('table');
-                    
-                    tables.forEach(table => {
-                        // Process all rows in the table
-                        const allRows = table.querySelectorAll('tr');
-                        allRows.forEach((row) => {
-                            // Check if the row's outerHTML contains a closing </tr> tag
-                            const rowOuterHTML = row.outerHTML;
-                            const hasClosingTag = rowOuterHTML.includes('</tr>');
-                            
-                            // If row doesn't have closing tag, remove it from DOM
-                            if (!hasClosingTag) {
-                                row.remove();
-                            }
-                        });
-                    });
-                });
-            } catch (error) {
-                console.error('processTableSkeletons error:', error);
-            }
-        }
+
         
         // Function to clean up incomplete tags and fix unclosed tags
         function cleanupHTML(html) {
@@ -339,11 +391,11 @@
                     // Initialize all thinking bubbles
                     initializeThinkingBubbles();
                     
-                    // Process table cells and add skeletons to incomplete ones
-                    processTableSkeletons();
-                    
                     // Initialize only NEW charts (not yet rendered)
                     initializeCharts();
+                    
+                    // Add copy buttons to tables
+                    addTableCopyButtons();
                     
                     // Hide copy buttons on messages with streaming content
                     hideCopyButtonsOnStreaming();
@@ -358,6 +410,31 @@
                 }
             } catch (error) {
                 console.error('updateMessages error:', error);
+            }
+        }
+        
+        // Function to add copy buttons to tables
+        function addTableCopyButtons() {
+            try {
+                const tables = document.querySelectorAll('table');
+                tables.forEach(table => {
+                    // Check if button already exists
+                    if (table.querySelector('.table-copy-button')) return;
+                    
+                    // Create copy button
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'table-copy-button';
+                    copyButton.textContent = 'Copy';
+                    copyButton.onclick = function(e) {
+                        e.stopPropagation();
+                        copyTableToExcel(this);
+                    };
+                    
+                    // Insert button as first child of table
+                    table.insertBefore(copyButton, table.firstChild);
+                });
+            } catch (error) {
+                console.error('addTableCopyButtons error:', error);
             }
         }
         
@@ -477,7 +554,6 @@
             console.log('Chat interface ready');
             initLinkTooltips();
             initializeThinkingBubbles();
-            processTableSkeletons();
             initializeCharts();
         });
     </script>

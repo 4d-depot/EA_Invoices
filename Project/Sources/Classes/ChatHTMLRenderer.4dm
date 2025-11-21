@@ -177,83 +177,6 @@ Function _extractChartTitle($chartConfig : Object) : Text
 	return ""
 
 
-Function _sanitizeIncompleteHTML($content : Text) : Text
-	// Detect and fix incomplete/unclosed HTML tags to prevent layout breaks
-	var $result : Text:=$content
-	var $openTags : Collection
-	var $i : Integer
-	var $char : Text
-	var $inTag : Boolean:=False
-	var $currentTag : Text:=""
-	var $isClosingTag : Boolean:=False
-	var $tagName : Text
-	
-	// Common self-closing tags that don't need closing
-	var $selfClosingTags : Collection:=New collection("br"; "hr"; "img"; "input"; "meta"; "link")
-	
-	// Stack to track open tags
-	$openTags:=New collection
-	
-	// Parse through the content to track open/close tags
-	For ($i; 1; Length($result))
-		$char:=Substring($result; $i; 1)
-		
-		If ($char="<")
-			$inTag:=True
-			$currentTag:=""
-			$isClosingTag:=False
-		Else 
-			If ($inTag)
-				If ($char=">")
-					// End of tag
-					$inTag:=False
-					
-					// Extract tag name (remove attributes and /)
-					$tagName:=$currentTag
-					If (Position(" "; $tagName)>0)
-						$tagName:=Substring($tagName; 1; Position(" "; $tagName)-1)
-					End if 
-					If (Position("/"; $tagName)>0)
-						$tagName:=Replace string($tagName; "/"; "")
-					End if 
-					$tagName:=Lowercase($tagName)
-					
-					If ($isClosingTag)
-						// Closing tag - remove from stack
-						If ($openTags.length>0) && ($openTags[$openTags.length-1]=$tagName)
-							$openTags.pop()
-						End if 
-					Else 
-						// Opening tag - add to stack if not self-closing
-						If ($selfClosingTags.indexOf($tagName)=-1) && (Position("/"; $currentTag)=0)
-							$openTags.push($tagName)
-						End if 
-					End if 
-					
-					$currentTag:=""
-				Else 
-					If ($char="/") && (Length($currentTag)=0)
-						$isClosingTag:=True
-					Else 
-						$currentTag+=$char
-					End if 
-				End if 
-			End if 
-		End if 
-	End for 
-	
-	// If tag was never closed, close it
-	If ($inTag)
-		$result+=">"
-	End if 
-	
-	// Close any remaining open tags in reverse order
-	For ($i; $openTags.length-1; 0; -1)
-		$result+="</"+$openTags[$i]+">"
-	End for 
-	
-	return $result
-
 
 Function _processThinkSections($content : Text) : Text
 	// Process content that contains <think> sections with state logic like tool calls
@@ -368,8 +291,7 @@ Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 	$contentHasHTML:=This._hasHTMLTags($cleanContent)
 	
 	If ($contentHasHTML)
-		// Sanitize incomplete HTML and wrap
-		$cleanContent:=This._sanitizeIncompleteHTML($cleanContent)
+		// Wrap HTML content - JavaScript cleanupHTML handles incomplete tags
 		return "<div class=\"html-content\">"+ $cleanContent+"</div>"
 	Else 
 		return This._escapeHTML($processedContent)  // Escape the processed content (after think processing)
