@@ -226,52 +226,76 @@
             try {
                 const container = document.querySelector('.chat-container');
                 if (container) {
-                    // Get all chart containers (both rendered and streaming)
-                    const existingCharts = container.querySelectorAll('.chart-container');
-                    const existingChartsMap = new Map();
+                    // Check if we have any streaming chart skeletons
+                    const hasStreamingSkeletons = container.querySelector('.chart-container.streaming') !== null;
                     
-                    existingCharts.forEach(chart => {
-                        const chartId = chart.getAttribute('data-chart-id');
-                        const isRendered = chart.getAttribute('data-chart-rendered') === 'true';
-                        const isStreaming = chart.classList.contains('streaming');
+                    if (!hasStreamingSkeletons) {
+                        // No streaming skeletons - safe to do full innerHTML replacement
                         
-                        if (chartId) {
-                            // Store both rendered charts and streaming skeletons with their state
-                            existingChartsMap.set(chartId, {
-                                element: chart,
-                                isRendered: isRendered,
-                                isStreaming: isStreaming
-                            });
-                        }
-                    });
-                    
-                    // Clean up incomplete tags and fix unclosed tags
-                    htmlContent = cleanupHTML(htmlContent);
-                    
-                    // Replace the container content
-                    container.innerHTML = htmlContent;
-                    
-                    // Restore existing charts and skeletons
-                    const newCharts = container.querySelectorAll('.chart-container');
-                    
-                    newCharts.forEach(newChart => {
-                        const chartId = newChart.getAttribute('data-chart-id');
-                        const existingChart = chartId && existingChartsMap.get(chartId);
+                        // Get all RENDERED chart containers to preserve
+                        const existingCharts = container.querySelectorAll('.chart-container[data-chart-rendered="true"]');
+                        const existingChartsMap = new Map();
                         
-                        if (existingChart) {
-                            const isNewStreaming = newChart.classList.contains('streaming');
-                            
-                            // If we have a rendered chart, always use it
-                            if (existingChart.isRendered) {
-                                newChart.replaceWith(existingChart.element);
+                        existingCharts.forEach(chart => {
+                            const chartId = chart.getAttribute('data-chart-id');
+                            if (chartId) {
+                                existingChartsMap.set(chartId, chart);
                             }
-                            // If both old and new are streaming, preserve the old skeleton to avoid animation reset
-                            else if (existingChart.isStreaming && isNewStreaming) {
-                                newChart.replaceWith(existingChart.element);
+                        });
+                        
+                        // Clean up incomplete tags and fix unclosed tags
+                        htmlContent = cleanupHTML(htmlContent);
+                        
+                        // Replace the container content
+                        container.innerHTML = htmlContent;
+                        
+                        // Restore rendered charts
+                        const newCharts = container.querySelectorAll('.chart-container');
+                        newCharts.forEach(newChart => {
+                            const chartId = newChart.getAttribute('data-chart-id');
+                            const existingChart = chartId && existingChartsMap.get(chartId);
+                            if (existingChart && existingChart.getAttribute('data-chart-rendered') === 'true') {
+                                newChart.replaceWith(existingChart);
                             }
-                            // Otherwise, use the new chart (streaming -> complete transition)
+                        });
+                    } else {
+                        // We have streaming skeletons - avoid innerHTML to preserve animations
+                        
+                        // Create a temporary container to parse the new HTML
+                        const tempContainer = document.createElement('div');
+                        tempContainer.innerHTML = cleanupHTML(htmlContent);
+                        
+                        // Get current and new message elements
+                        const currentMessages = Array.from(container.querySelectorAll('.message'));
+                        const newMessages = Array.from(tempContainer.querySelectorAll('.message'));
+                        
+                        // Update or add messages
+                        newMessages.forEach((newMsg, index) => {
+                            if (index < currentMessages.length) {
+                                const currentMsg = currentMessages[index];
+                                // Check if this message has a streaming skeleton
+                                const hasStreamingSkeleton = currentMsg.querySelector('.chart-container.streaming') !== null;
+                                const newHasStreamingSkeleton = newMsg.querySelector('.chart-container.streaming') !== null;
+                                
+                                if (!hasStreamingSkeleton || (hasStreamingSkeleton && !newHasStreamingSkeleton)) {
+                                    // Safe to replace this message if:
+                                    // - It doesn't have a streaming skeleton, OR
+                                    // - It had a streaming skeleton but the new one doesn't (transition complete)
+                                    currentMsg.replaceWith(newMsg);
+                                }
+                                // Still has streaming skeleton - leave it untouched
+                            } else {
+                                // New message - append it
+                                container.appendChild(newMsg);
+                            }
+                        });
+                        
+                        // Remove extra old messages if new content has fewer
+                        while (currentMessages.length > newMessages.length) {
+                            currentMessages[currentMessages.length - 1].remove();
+                            currentMessages.pop();
                         }
-                    });
+                    }
                     
                     // Initialize all thinking bubbles
                     initializeThinkingBubbles();
