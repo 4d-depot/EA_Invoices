@@ -64,6 +64,12 @@ body {
     opacity: 1;
 }
 
+/* Hide copy button while any streaming is occurring */
+.chat-container:has(.streaming) .copy-button {
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
 .copy-button:hover {
     background: #e5e7eb;
     color: #374151;

@@ -127,8 +127,8 @@
 				"btnAskMe": {
 					"type": "button",
 					"text": "🚀",
-					"top": 846,
-					"left": 833,
+					"top": 843,
+					"left": 893,
 					"width": 60,
 					"height": 36,
 					"events": [
@@ -138,13 +138,14 @@
 					"method": "ObjectMethods/btnAskMe.4dm",
 					"defaultButton": false,
 					"sizingX": "move",
-					"sizingY": "move"
+					"sizingY": "move",
+					"tooltip": "Prompt"
 				},
 				"btnNewChat": {
 					"type": "button",
 					"text": "🗑️",
-					"top": 846,
-					"left": 900,
+					"top": 843,
+					"left": 825,
 					"width": 60,
 					"height": 36,
 					"events": [
@@ -154,7 +155,8 @@
 					"method": "ObjectMethods/btnNewChat.4dm",
 					"defaultButton": false,
 					"sizingX": "move",
-					"sizingY": "move"
+					"sizingY": "move",
+					"tooltip": "New chat"
 				},
 				"Web Area": {
 					"type": "webArea",
@@ -172,17 +174,35 @@
 					"method": "ObjectMethods/Web Area.4dm",
 					"sizingX": "grow",
 					"sizingY": "grow"
+				},
+				"btnCopy": {
+					"type": "button",
+					"text": "📋\r",
+					"top": 843,
+					"left": 758,
+					"width": 60,
+					"height": 36,
+					"events": [
+						"onClick"
+					],
+					"borderStyle": "none",
+					"method": "ObjectMethods/btnCopy.4dm",
+					"defaultButton": false,
+					"sizingX": "move",
+					"sizingY": "move",
+					"tooltip": "Copy messages to clipboard"
 				}
 			},
 			"entryOrder": [
 				"Input",
 				"btnAskMe",
 				"btnNewChat",
-				"Web Area"
+				"Web Area",
+				"btnCopy"
 			]
 		}
 	],
-	"geometryStamp": 2732,
+	"geometryStamp": 2749,
 	"editor": {
 		"activeView": "View 1",
 		"defaultView": "View 1",

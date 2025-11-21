@@ -38,6 +38,17 @@ Function btnAskMeEventHandler($formEventCode : Integer)
 			This:C1470.prompt:=""
 	End case 
 	
+Function btnCopyEventHandler($formEventCode : Integer)
+	var $messages : Collection
+	
+	Case of 
+		: ($formEventCode=On Clicked:K2:4)
+			$messages:=cs:C1710.AI_ChatWithTools.me.messages()
+			If ($messages#Null:C1517)
+				SET TEXT TO PASTEBOARD:C523(JSON Stringify:C1217($messages; *))
+			End if 
+	End case 
+	
 Function queryObjectFromUrl($url : Text)
 	var $urlQueryString : Text
 	var $parsedQueryString; $splittedPair; $entitiesStrings : Collection

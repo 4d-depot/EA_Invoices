@@ -12,7 +12,7 @@ singleton Class constructor()
 	//MARK: -
 	//MARK: Tools declaration & schema
 	
-Function loadTools()
+Function _loadTools()
 	var $toolsFilePath:="/RESOURCES/AITools.json"
 	var $jsonText : Text
 	var $jsonObject : Object
@@ -29,7 +29,7 @@ Function loadTools()
 		return 
 	End try
 	
-Function getToolArgumentsSchema($name : Text) : Object
+Function _getToolArgumentsSchema($name : Text) : Object
 	var $toolDecl : Object
 	
 	$toolDecl:=This:C1470.AIBot.tools.query("name = :1"; $name).first()
@@ -38,7 +38,7 @@ Function getToolArgumentsSchema($name : Text) : Object
 	//MARK: -
 	//MARK: Tools implementation
 	
-Function functionName($callChain : Collection) : Text
+Function _functionName($callChain : Collection) : Text
 	var $name : Text:=$callChain[0].name
 	
 	Try
@@ -52,7 +52,7 @@ Function tool_getProducts($input : Object) : Object
 	var $validation; $returnObject : Object
 	var $entities : cs:C1710.PRODUCTSSelection:=ds:C1482.PRODUCTS.all()
 	
-	$validation:=JSON Validate:C1456($input; This:C1470.getToolArgumentsSchema(This:C1470.functionName(Call chain:C1662)))
+	$validation:=JSON Validate:C1456($input; This:C1470._getToolArgumentsSchema(This:C1470._functionName(Call chain:C1662)))
 	If (Not:C34($validation.success))
 		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
 	End if 
@@ -92,7 +92,7 @@ Function tool_getClients($input : Object) : Object
 	var $validation; $returnObject : Object
 	var $entities : cs:C1710.CLIENTSSelection:=ds:C1482.CLIENTS.all()
 	
-	$validation:=JSON Validate:C1456($input; This:C1470.getToolArgumentsSchema(This:C1470.functionName(Call chain:C1662)))
+	$validation:=JSON Validate:C1456($input; This:C1470._getToolArgumentsSchema(This:C1470._functionName(Call chain:C1662)))
 	If (Not:C34($validation.success))
 		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
 	End if 
@@ -133,7 +133,7 @@ Function tool_getInvoices($input : Object) : Object
 	var $validation; $returnObject : Object
 	var $entities : cs:C1710.INVOICESSelection:=ds:C1482.INVOICES.all()
 	
-	$validation:=JSON Validate:C1456($input; This:C1470.getToolArgumentsSchema(This:C1470.functionName(Call chain:C1662)))
+	$validation:=JSON Validate:C1456($input; This:C1470._getToolArgumentsSchema(This:C1470._functionName(Call chain:C1662)))
 	If (Not:C34($validation.success))
 		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
 	End if 
@@ -172,7 +172,7 @@ Function tool_getInvoiceLines($input : Object) : Object
 	var $validation; $returnObject : Object
 	var $entities : cs:C1710.INVOICE_LINESSelection:=ds:C1482.INVOICE_LINES.all()
 	
-	$validation:=JSON Validate:C1456($input; This:C1470.getToolArgumentsSchema(This:C1470.functionName(Call chain:C1662)))
+	$validation:=JSON Validate:C1456($input; This:C1470._getToolArgumentsSchema(This:C1470._functionName(Call chain:C1662)))
 	If (Not:C34($validation.success))
 		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
 	End if 
@@ -229,7 +229,7 @@ Function tool_getInvoiceLines($input : Object) : Object
 	//MARK: onStreamTerminate and onStreamData
 	
 	
-Function onStreamTerminate($result : cs:C1710.AIKit.OpenAIChatCompletionsResult)
+Function _onStreamTerminate($result : cs:C1710.AIKit.OpenAIChatCompletionsResult)
 	var $me:=cs:C1710.AI_ChatWithTools.me
 	
 	If (Not:C34($result.success))
@@ -239,7 +239,7 @@ Function onStreamTerminate($result : cs:C1710.AIKit.OpenAIChatCompletionsResult)
 	
 	$me.formObject.terminateChat()
 	
-Function onStreamData($result : cs:C1710.AIKit.OpenAIChatCompletionsResult)
+Function _onStreamData($result : cs:C1710.AIKit.OpenAIChatCompletionsResult)
 	var $me:=cs:C1710.AI_ChatWithTools.me
 	
 	If (Not:C34($result.success))
@@ -256,11 +256,7 @@ Function onStreamData($result : cs:C1710.AIKit.OpenAIChatCompletionsResult)
 	//MARK: -
 	//MARK: AIBot management functions
 	
-Function resetContext()
-	This:C1470.AIClient:=Null:C1517
-	This:C1470.AIBot:=Null:C1517
-	
-Function relationsInfos() : Collection
+Function _relationsInfos() : Collection
 	var $info; $relation; $field : Object
 	var $relations : Collection
 	
@@ -277,11 +273,18 @@ Function relationsInfos() : Collection
 	End for each 
 	return $relations
 	
-Function initBot() : cs:C1710.AIKit.OpenAIChatHelper
+Function messages() : Collection
+	return (This:C1470.AIBot) ? This:C1470.AIBot.messages : Null:C1517
+	
+Function resetContext()
+	This:C1470.AIClient:=Null:C1517
+	This:C1470.AIBot:=Null:C1517
+	
+Function _initBot() : cs:C1710.AIKit.OpenAIChatHelper
 	var $systemPrompt : Text
 	var $options:=cs:C1710.AIKit.OpenAIChatCompletionsParameters.new()
 	var $provider : Object
-	var $relations : Collection:=This:C1470.relationsInfos()
+	var $relations : Collection:=This:C1470._relationsInfos()
 	
 	Try
 		$provider:=JSON Parse:C1218(File:C1566("/RESOURCES/AIProvider.json").getText(); Is object:K8:27)
@@ -297,8 +300,8 @@ Function initBot() : cs:C1710.AIKit.OpenAIChatHelper
 	
 	$options.model:=$provider.reasoning.model
 	$options.stream:=True:C214
-	$options.onData:=This:C1470.onStreamData
-	$options.onTerminate:=This:C1470.onStreamTerminate
+	$options.onData:=This:C1470._onStreamData
+	$options.onTerminate:=This:C1470._onStreamTerminate
 	$options.tool_choice:="auto"  //fixme: check if 'any'
 	
 	$systemPrompt:="You are a helpful assistant. I need your help to answer questions data stored in my application.\n"+\
@@ -352,7 +355,7 @@ Function initBot() : cs:C1710.AIKit.OpenAIChatHelper
 		"In such case, and only in such case, do not execute any tool and invite the user to ask more appropriate questions.\n"
 	
 	This:C1470.AIBot:=This:C1470.AIClient.chat.create($systemPrompt; $options)
-	This:C1470.loadTools()
+	This:C1470._loadTools()
 	
 	return This:C1470.AIBot
 	
@@ -362,7 +365,7 @@ Function initBot() : cs:C1710.AIKit.OpenAIChatHelper
 Function askMe($prompt : Text; $formObject : Object)
 	This:C1470.formObject:=$formObject
 	
-	This:C1470.AIBot:=(This:C1470.AIBot) || This:C1470.initBot()
+	This:C1470.AIBot:=(This:C1470.AIBot) || This:C1470._initBot()
 	return (This:C1470.AIBot) ? This:C1470.AIBot.prompt($prompt) : This:C1470.formObject.terminateChat()
 	
 	

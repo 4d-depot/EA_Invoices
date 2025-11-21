@@ -226,15 +226,22 @@
             try {
                 const container = document.querySelector('.chat-container');
                 if (container) {
-                    // Get all RENDERED chart containers from current DOM (preserve the actual DOM element, not a clone)
-                    const existingCharts = container.querySelectorAll('.chart-container[data-chart-rendered="true"]');
+                    // Get all chart containers (both rendered and streaming)
+                    const existingCharts = container.querySelectorAll('.chart-container');
                     const existingChartsMap = new Map();
                     
                     existingCharts.forEach(chart => {
                         const chartId = chart.getAttribute('data-chart-id');
+                        const isRendered = chart.getAttribute('data-chart-rendered') === 'true';
+                        const isStreaming = chart.classList.contains('streaming');
+                        
                         if (chartId) {
-                            // Store the actual DOM element (with live Chart.js instance)
-                            existingChartsMap.set(chartId, chart);
+                            // Store both rendered charts and streaming skeletons with their state
+                            existingChartsMap.set(chartId, {
+                                element: chart,
+                                isRendered: isRendered,
+                                isStreaming: isStreaming
+                            });
                         }
                     });
                     
@@ -244,16 +251,25 @@
                     // Replace the container content
                     container.innerHTML = htmlContent;
                     
-                    // Restore existing rendered charts by replacing the new placeholders
+                    // Restore existing charts and skeletons
                     const newCharts = container.querySelectorAll('.chart-container');
                     
                     newCharts.forEach(newChart => {
                         const chartId = newChart.getAttribute('data-chart-id');
                         const existingChart = chartId && existingChartsMap.get(chartId);
                         
-                        // Restore rendered chart if exists (existingChartsMap only contains rendered charts)
                         if (existingChart) {
-                            newChart.replaceWith(existingChart);
+                            const isNewStreaming = newChart.classList.contains('streaming');
+                            
+                            // If we have a rendered chart, always use it
+                            if (existingChart.isRendered) {
+                                newChart.replaceWith(existingChart.element);
+                            }
+                            // If both old and new are streaming, preserve the old skeleton to avoid animation reset
+                            else if (existingChart.isStreaming && isNewStreaming) {
+                                newChart.replaceWith(existingChart.element);
+                            }
+                            // Otherwise, use the new chart (streaming -> complete transition)
                         }
                     });
                     
