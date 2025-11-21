@@ -47,6 +47,85 @@ Function _functionName($callChain : Collection) : Text
 		return ""
 	End try
 	
+Function tool_createInvoice($input : Object) : Object
+	var $validation; $returnObject : Object
+	var $client : cs:C1710.CLIENTSEntity
+	var $invoice : cs:C1710.INVOICESEntity
+	var $invoiceObject : Object
+	var $invoiceLine : cs:C1710.INVOICE_LINESEntity
+	var $invoiceLineObject : Object
+	var $product : cs:C1710.PRODUCTSEntity
+	var $lineNumber : Integer:=1
+	var $nb0 : Integer
+	
+	//$input.Client_ID: Client_ID must exist in database
+	$client:=ds:C1482.CLIENTS.get($input.Client_ID)
+	
+	Case of 
+		: ($input.Lines_Fm_Invoices.length=0)
+			return {error: "Invoice must have invoice lines"}
+		: ($client=Null:C1517)
+			return {error: "Client ID not found in database"}
+	End case 
+	
+	ds:C1482.startTransaction()
+	Try
+		$invoice:=ds:C1482.INVOICES.new()
+		$invoice.Client:=$client
+		$invoice.Creation_Date:=Date:C102($input.Creation_Date)  // date YYYY-MM-DD
+		$invoice.Paid:=$input.Paid  // Boolean. if true, Payment_Date, Payment_Method and Payment_Reference should be filled
+		$invoice.Payment_Date:=Date:C102($input.Payment_Date)  // date YYYY-MM-DD
+		$invoice.Payment_Method:=$input.Payment_Method  // String
+		$invoice.Payment_Reference:=$input.Payment_Reference  // String
+		$invoice.ProForma:=$input.ProForma  // Boolean
+		$invoice.Payment_Delay:=$input.Payment_Delay  // Integer, number of days, should be 30, 60 or 90
+		$invoice.Proforma_Number:=$input.Proforma_Number  // String
+		$invoice.Credit_Note:=$input.Credit_Note  // Boolean
+		
+		$invoice.save()
+		
+		//$input.Lines_Fm_Invoices must be a collection of INVOICE_LINESEntity objects
+		For each ($invoiceLineObject; $input.Lines_Fm_Invoices)
+			//Product_ID must exist in database
+			$product:=ds:C1482.PRODUCTS.get($invoiceLineObject.Product_ID)
+			If ($product=Null:C1517)
+				ds:C1482.cancelTransaction()
+				return {error: "Product ID not found in database"}
+			End if 
+			$invoiceLine:=ds:C1482.INVOICE_LINES.new()
+			$invoiceLine.Invoice:=$invoice
+			$invoiceLine.Product:=$product
+			$invoiceLine._ProductReference:=$product.Reference  // Obtained from product
+			$invoiceLine._ProductName:=$product.Name  // Obtained from product
+			$invoiceLine.Quantity:=$invoiceLineObject.Quantity  // Integer
+			$invoiceLine.Unit_Price:=$product.Sale_Price  // Obtained from product
+			$invoiceLine.Discount_Rate:=$invoiceLineObject.Discount_Rate  // Integer between 0 and 100, mostly under 10
+			$invoiceLine.Tax_Rate:=$product.Tax_Rate  // Obtained from product
+			$invoiceLine.Total:=Round:C94($invoiceLine.Quantity*$invoiceLine.Unit_Price*(1-($invoiceLine.Discount_Rate/100)); 2)  // Calculated
+			$invoiceLine.Total_Tax:=Round:C94($invoiceLine.Total*($invoiceLine.Tax_Rate/100); 2)  // Calculated
+			$invoiceLine.Line_Number:=$lineNumber  // Calculated
+			$invoiceLine.save()
+			$lineNumber+=1
+		End for each 
+		
+		$nb0:=5-Length:C16(String:C10($invoice.ID))
+		$invoice.Invoice_Number:="INV"+($nb0*"0")+String:C10($invoice.ID)
+		$invoice.Subtotal_BT:=$invoice.Lines_Fm_Invoices.sum("Total")
+		$invoice.Tax:=$invoice.Lines_Fm_Invoices.sum("Total_Tax")
+		$invoice.Total:=$invoice.Subtotal_BT+$invoice.Tax
+		$invoice.save()
+	Catch
+		ds:C1482.cancelTransaction()
+		return {error: "An error occured while trying to create the invoice: "+JSON Stringify:C1217(Last errors:C1799; *)}
+		
+	End try
+	ds:C1482.validateTransaction()
+	
+	$returnObject:={}
+	$returnObject.form:="Invoices"
+	$returnObject.dataClass:="INVOICES"
+	$returnObject.entity:=JSON Stringify:C1217($invoice.toObject("*, Lines_Fm_Invoices.*"))
+	return $returnObject
 	
 Function tool_getProducts($input : Object) : Object
 	var $validation; $returnObject : Object
@@ -127,7 +206,6 @@ Function tool_getClients($input : Object) : Object
 	$returnObject.entities:=$entities.toCollection("ID, Name, Contact, City, State, Country, Discount_Rate, Total_Sales, Comments")
 	
 	return $returnObject
-	
 	
 Function tool_getInvoices($input : Object) : Object
 	var $validation; $returnObject : Object

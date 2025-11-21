@@ -357,6 +357,137 @@
           }
         ]
       }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "tool_createInvoice",
+        "description": "Creates a new invoice with invoice lines in the database. Requires a valid Client_ID and at least one invoice line. Each invoice line must reference an existing Product_ID. The function automatically calculates line totals, taxes, and invoice totals. Returns success or error message.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "Client_ID": {
+              "type": "string",
+              "description": "Client ID (required). Must exist in the CLIENTS database. The invoice will be created for this client."
+            },
+            "Creation_Date": {
+              "type": "string",
+              "description": "Invoice creation date in YYYY-MM-DD format. Example: '2025-11-21'"
+            },
+            "Paid": {
+              "type": "boolean",
+              "description": "Payment status. If true, Payment_Date, Payment_Method, and Payment_Reference should be provided."
+            },
+            "Payment_Date": {
+              "type": "string",
+              "description": "Payment date in YYYY-MM-DD format. Only relevant if Paid is true. Example: '2025-11-21'"
+            },
+            "Payment_Method": {
+              "type": "string",
+              "description": "Payment method (e.g., 'Credit Card', 'Bank Transfer', 'Check', 'Cash'). Only relevant if Paid is true."
+            },
+            "Payment_Reference": {
+              "type": "string",
+              "description": "Payment reference number or transaction ID. Only relevant if Paid is true."
+            },
+            "ProForma": {
+              "type": "boolean",
+              "description": "Whether this is a pro forma invoice (not a final invoice)."
+            },
+            "Payment_Delay": {
+              "type": "integer",
+              "enum": [30, 60, 90],
+              "description": "Payment delay in days. Must be 30, 60, or 90 days."
+            },
+            "Proforma_Number": {
+              "type": "string",
+              "description": "Pro forma number if this is a pro forma invoice."
+            },
+            "Credit_Note": {
+              "type": "boolean",
+              "description": "Whether this is a credit note (negative invoice)."
+            },
+            "Lines_Fm_Invoices": {
+              "type": "array",
+              "description": "Array of invoice lines (required). Must contain at least one line.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Product_ID": {
+                    "type": "string",
+                    "description": "Product ID (required). Must exist in the PRODUCTS database. Product details (reference, name, price, tax rate) will be fetched automatically."
+                  },
+                  "Quantity": {
+                    "type": "integer",
+                    "description": "Quantity of the product (required). Must be a positive integer."
+                  },
+                  "Discount_Rate": {
+                    "type": "number",
+                    "description": "Discount rate as a percentage (0-100). Typically under 10. Example: 5 for 5% discount."
+                  }
+                },
+                "required": ["Product_ID", "Quantity", "Discount_Rate"],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            }
+          },
+          "required": ["Client_ID", "Creation_Date", "Paid", "ProForma", "Payment_Delay", "Credit_Note", "Lines_Fm_Invoices"],
+          "strict": true,
+          "additionalProperties": false
+        },
+        "x-examples": [
+          {
+            "description": "Create a simple unpaid invoice with two products",
+            "value": {
+              "Client_ID": "123",
+              "Creation_Date": "2025-11-21",
+              "Paid": false,
+              "Payment_Date": "",
+              "Payment_Method": "",
+              "Payment_Reference": "",
+              "ProForma": false,
+              "Payment_Delay": 30,
+              "Proforma_Number": "",
+              "Credit_Note": false,
+              "Lines_Fm_Invoices": [
+                {
+                  "Product_ID": "456",
+                  "Quantity": 2,
+                  "Discount_Rate": 0
+                },
+                {
+                  "Product_ID": "789",
+                  "Quantity": 1,
+                  "Discount_Rate": 5
+                }
+              ]
+            }
+          },
+          {
+            "description": "Create a paid invoice with payment details",
+            "value": {
+              "Client_ID": "123",
+              "Creation_Date": "2025-11-15",
+              "Paid": true,
+              "Payment_Date": "2025-11-20",
+              "Payment_Method": "Bank Transfer",
+              "Payment_Reference": "TRX-2025-1234",
+              "ProForma": false,
+              "Payment_Delay": 30,
+              "Proforma_Number": "",
+              "Credit_Note": false,
+              "Lines_Fm_Invoices": [
+                {
+                  "Product_ID": "101",
+                  "Quantity": 5,
+                  "Discount_Rate": 10
+                }
+              ]
+            }
+          }
+        ]
+      }
     }
   ]
 }

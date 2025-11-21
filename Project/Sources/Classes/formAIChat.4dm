@@ -32,7 +32,6 @@ Function btnNewChatEventHandler($formEventCode : Integer)
 Function btnAskMeEventHandler($formEventCode : Integer)
 	Case of 
 		: ($formEventCode=On Clicked:K2:4)
-			//Form.people:=Null
 			OBJECT SET VISIBLE:C603(*; "btn@"; False:C215)
 			cs:C1710.AI_ChatWithTools.me.askMe(Form:C1466.prompt; This:C1470)
 			This:C1470.prompt:=""
@@ -48,6 +47,26 @@ Function btnCopyEventHandler($formEventCode : Integer)
 				SET TEXT TO PASTEBOARD:C523(JSON Stringify:C1217($messages; *))
 			End if 
 	End case 
+	
+	
+Function inputEventHandler($formEventCode : Integer)
+	var $currentText : Text
+	
+	Case of 
+		: ($formEventCode=On Before Keystroke:K2:6)
+			If ((Character code:C91(Keystroke:C390)=Carriage return:K15:38) && (Macintosh command down:C546 || Macintosh control down:C544 || Macintosh option down:C545 || Windows Alt down:C563 || Windows Ctrl down:C562))
+				// Get the current text being edited (before keystroke is processed)
+				$currentText:=Get edited text:C655
+				If ($currentText#"")
+					OBJECT SET VISIBLE:C603(*; "btn@"; False:C215)
+					FILTER KEYSTROKE:C389("")  // Cancel the carriage return keystroke
+					cs:C1710.AI_ChatWithTools.me.askMe($currentText; This:C1470)
+					Form:C1466.prompt:=""
+				End if 
+			End if 
+	End case 
+	
+	
 	
 Function queryObjectFromUrl($url : Text)
 	var $urlQueryString : Text
