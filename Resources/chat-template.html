@@ -38,7 +38,7 @@
         }
         
         // Function to copy assistant message content to clipboard
-        function copyMessageContent(button, messageIndex) {
+        async function copyMessageContent(button, messageIndex) {
             try {
                 // Get the message content element
                 const messageDiv = button.closest('.assistant-message');
@@ -54,6 +54,45 @@
                 // Remove think-tag elements
                 const thinkTags = clonedContent.querySelectorAll('.think-tag');
                 thinkTags.forEach(tag => tag.remove());
+                
+                // Convert charts to images
+                const chartContainers = clonedContent.querySelectorAll('.chart-container[data-chart-rendered="true"]');
+                const chartPromises = Array.from(chartContainers).map(async (container) => {
+                    const canvas = container.querySelector('canvas');
+                    if (canvas && canvas.id) {
+                        try {
+                            // Get the original canvas from the DOM (not the clone)
+                            const originalCanvas = document.getElementById(canvas.id);
+                            if (originalCanvas) {
+                                // Convert canvas to data URL
+                                const dataUrl = originalCanvas.toDataURL('image/png');
+                                
+                                // Replace the chart container with an img tag
+                                const img = document.createElement('img');
+                                img.src = dataUrl;
+                                img.style.maxWidth = '100%';
+                                img.style.height = 'auto';
+                                img.alt = 'Chart';
+                                
+                                // Preserve title if exists
+                                const title = container.querySelector('.chart-title');
+                                if (title) {
+                                    const titleClone = title.cloneNode(true);
+                                    container.innerHTML = '';
+                                    container.appendChild(titleClone);
+                                    container.appendChild(img);
+                                } else {
+                                    container.innerHTML = '';
+                                    container.appendChild(img);
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Failed to convert chart to image:', err);
+                        }
+                    }
+                });
+                
+                await Promise.all(chartPromises);
                 
                 // Get HTML content with inline styles for better paste compatibility
                 const htmlContent = applyInlineStylesToTables(clonedContent.innerHTML);
