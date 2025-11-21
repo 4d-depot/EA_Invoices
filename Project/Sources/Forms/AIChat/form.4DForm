@@ -86,7 +86,9 @@
 					"right": 986,
 					"bottom": 900,
 					"strokeWidth": 0,
-					"stroke": "transparent"
+					"stroke": "transparent",
+					"sizingX": "grow",
+					"sizingY": "grow"
 				},
 				"Rectangle2": {
 					"type": "rectangle",
@@ -97,7 +99,9 @@
 					"borderRadius": 20,
 					"stroke": "#E8E8E8",
 					"fill": "#F2F2F2",
-					"strokeWidth": 2
+					"strokeWidth": 2,
+					"sizingY": "move",
+					"sizingX": "grow"
 				},
 				"Input": {
 					"type": "input",
@@ -116,7 +120,9 @@
 					"events": [
 						"onDataChange"
 					],
-					"method": ""
+					"method": "",
+					"sizingX": "grow",
+					"sizingY": "move"
 				},
 				"btnAskMe": {
 					"type": "button",
@@ -130,7 +136,9 @@
 					],
 					"borderStyle": "none",
 					"method": "ObjectMethods/btnAskMe.4dm",
-					"defaultButton": false
+					"defaultButton": false,
+					"sizingX": "move",
+					"sizingY": "move"
 				},
 				"btnNewChat": {
 					"type": "button",
@@ -144,7 +152,9 @@
 					],
 					"borderStyle": "none",
 					"method": "ObjectMethods/btnNewChat.4dm",
-					"defaultButton": false
+					"defaultButton": false,
+					"sizingX": "move",
+					"sizingY": "move"
 				},
 				"Web Area": {
 					"type": "webArea",
@@ -159,7 +169,9 @@
 						"onLoad",
 						"onURLFiltering"
 					],
-					"method": "ObjectMethods/Web Area.4dm"
+					"method": "ObjectMethods/Web Area.4dm",
+					"sizingX": "grow",
+					"sizingY": "grow"
 				}
 			},
 			"entryOrder": [
@@ -170,7 +182,7 @@
 			]
 		}
 	],
-	"geometryStamp": 2720,
+	"geometryStamp": 2732,
 	"editor": {
 		"activeView": "View 1",
 		"defaultView": "View 1",

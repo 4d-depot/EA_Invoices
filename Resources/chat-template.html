@@ -120,6 +120,68 @@
             }
         }
         
+        // Function to remove incomplete rows from tables
+        function processTableSkeletons() {
+            try {
+                const assistantMessages = document.querySelectorAll('.message.assistant');
+                
+                assistantMessages.forEach(message => {
+                    const messageHTML = message.innerHTML;
+                    const tables = message.querySelectorAll('table');
+                    
+                    tables.forEach(table => {
+                        // Process all rows in the table
+                        const allRows = table.querySelectorAll('tr');
+                        allRows.forEach((row) => {
+                            // Check if the row's outerHTML contains a closing </tr> tag
+                            const rowOuterHTML = row.outerHTML;
+                            const hasClosingTag = rowOuterHTML.includes('</tr>');
+                            
+                            // If row doesn't have closing tag, remove it from DOM
+                            if (!hasClosingTag) {
+                                row.remove();
+                            }
+                        });
+                    });
+                });
+            } catch (error) {
+                console.error('processTableSkeletons error:', error);
+            }
+        }
+        
+        // Function to clean up incomplete tags and fix unclosed tags
+        function cleanupHTML(html) {
+            try {
+                // Remove incomplete opening tags like <html, <div, etc (tag name not complete or no closing >)
+                // Match < followed by optional letters/hyphens but NOT followed by > before end of string
+                html = html.replace(/<[a-zA-Z][a-zA-Z0-9\-]*(?![^<]*>)[^<]*$/g, '');
+                
+                // Remove empty incomplete tags like <> or < >
+                html = html.replace(/<\s*>/g, '');
+                
+                // Auto-close common unclosed tags
+                const tagsToClose = ['html', 'table', 'thead', 'tbody', 'tr', 'div', 'p', 'ul', 'ol', 'li'];
+                
+                tagsToClose.forEach(tag => {
+                    const openCount = (html.match(new RegExp(`<${tag}[^>]*>`, 'gi')) || []).length;
+                    const closeCount = (html.match(new RegExp(`</${tag}>`, 'gi')) || []).length;
+                    const diff = openCount - closeCount;
+                    
+                    // Add missing closing tags
+                    if (diff > 0) {
+                        for (let i = 0; i < diff; i++) {
+                            html += `</${tag}>`;
+                        }
+                    }
+                });
+                
+                return html;
+            } catch (error) {
+                console.error('cleanupHTML error:', error);
+                return html;
+            }
+        }
+        
         // Function to initialize all charts in the container
         function initializeCharts() {
             try {
@@ -176,6 +238,9 @@
                         }
                     });
                     
+                    // Clean up incomplete tags and fix unclosed tags
+                    htmlContent = cleanupHTML(htmlContent);
+                    
                     // Replace the container content
                     container.innerHTML = htmlContent;
                     
@@ -194,6 +259,9 @@
                     
                     // Initialize all thinking bubbles
                     initializeThinkingBubbles();
+                    
+                    // Process table cells and add skeletons to incomplete ones
+                    processTableSkeletons();
                     
                     // Initialize only NEW charts (not yet rendered)
                     initializeCharts();
@@ -330,6 +398,7 @@
             console.log('Chat interface ready');
             initLinkTooltips();
             initializeThinkingBubbles();
+            processTableSkeletons();
             initializeCharts();
         });
     </script>
