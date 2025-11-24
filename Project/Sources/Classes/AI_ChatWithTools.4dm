@@ -1,12 +1,12 @@
 property AIClient : cs:C1710.AIKit.OpenAI
 property AIBot : cs:C1710.AIKit.OpenAIChatHelper
 property formObject : Object
-property maxTop : Integer
+property defaultTop : Integer
 
 singleton Class constructor()
 	This:C1470.AIBot:=Null:C1517
 	This:C1470.formObject:=Null:C1517
-	This:C1470.maxTop:=100
+	This:C1470.defaultTop:=100
 	
 	
 	//MARK: -
@@ -145,7 +145,8 @@ Function tool_getProducts($input : Object) : Object
 	$input.orderBy:=($input.orderBy) || {}
 	$input.orderBy.field:=($input.orderBy.field) || "Name"
 	$input.orderBy.order:=($input.orderBy.order) || "asc"
-	$input.top:=($input.top) || This:C1470.maxTop
+	$input.top:=($input.top) || This:C1470.defaultTop
+	$input.countOnly:=($input.countOnly) || False:C215
 	
 	$returnObject:={}
 	$returnObject.form:="Products"
@@ -163,7 +164,7 @@ Function tool_getProducts($input : Object) : Object
 		$entities:=$entities.slice(0; $input.top)
 	End if 
 	$returnObject.counts.totalSent:=$entities.length
-	$returnObject.entities:=$entities.toCollection("ID, Reference, Name, Sale_Price")
+	$returnObject.entities:=($input.countOnly) ? [] : $entities.toCollection("ID, Reference, Name, Sale_Price")
 	
 	return $returnObject
 	
@@ -185,7 +186,8 @@ Function tool_getClients($input : Object) : Object
 	$input.orderBy:=($input.orderBy) || {}
 	$input.orderBy.field:=($input.orderBy.field) || "Name"
 	$input.orderBy.order:=($input.orderBy.order) || "asc"
-	$input.top:=($input.top) || This:C1470.maxTop
+	$input.top:=($input.top) || This:C1470.defaultTop
+	$input.countOnly:=($input.countOnly) || False:C215
 	
 	$returnObject:={}
 	$returnObject.form:="Clients"
@@ -203,7 +205,7 @@ Function tool_getClients($input : Object) : Object
 		$entities:=$entities.slice(0; $input.top)
 	End if 
 	$returnObject.counts.totalSent:=$entities.length
-	$returnObject.entities:=$entities.toCollection("ID, Name, Contact, City, State, Country, Discount_Rate, Total_Sales, Comments")
+	$returnObject.entities:=($input.countOnly) ? [] : $entities.toCollection("ID, Name, Contact, City, State, Country, Discount_Rate, Total_Sales, Comments")
 	
 	return $returnObject
 	
@@ -224,7 +226,8 @@ Function tool_getInvoices($input : Object) : Object
 	$input.orderBy:=($input.orderBy) || {}
 	$input.orderBy.field:=($input.orderBy.field) || "Total"
 	$input.orderBy.order:=($input.orderBy.order) || "desc"
-	$input.top:=($input.top) || This:C1470.maxTop
+	$input.top:=($input.top) || This:C1470.defaultTop
+	$input.countOnly:=($input.countOnly) || False:C215
 	
 	$returnObject:={}
 	$returnObject.form:="Invoices"
@@ -242,7 +245,7 @@ Function tool_getInvoices($input : Object) : Object
 		$entities:=$entities.slice(0; $input.top)
 	End if 
 	$returnObject.counts.totalSent:=$entities.length
-	$returnObject.entities:=$entities.toCollection("ID, Invoice_Number, Client_ID, Creation_Date, Paid, Payment_Date, Total")
+	$returnObject.entities:=($input.countOnly) ? [] : $entities.toCollection("ID, Invoice_Number, Client_ID, Creation_Date, Paid, Payment_Date, Total")
 	
 	return $returnObject
 	
@@ -268,7 +271,8 @@ Function tool_getInvoiceLines($input : Object) : Object
 	$input.orderBy:=($input.orderBy) || {}
 	$input.orderBy.field:=($input.orderBy.field) || "Total"
 	$input.orderBy.order:=($input.orderBy.order) || "desc"
-	$input.top:=($input.top) || This:C1470.maxTop
+	$input.top:=($input.top) || This:C1470.defaultTop
+	$input.countOnly:=($input.countOnly) || False:C215
 	
 	$returnObject:={}
 	$returnObject.form:="not available"
@@ -298,7 +302,7 @@ Function tool_getInvoiceLines($input : Object) : Object
 		$entities:=$entities.slice(0; $input.top)
 	End if 
 	$returnObject.counts.totalSent:=$entities.length
-	$returnObject.entities:=$entities.toCollection("ID, Line_Number, Invoice.Invoice_Number, Invoice.Client_ID, Total, Quantity, Product.ID")
+	$returnObject.entities:=($input.countOnly) ? [] : $entities.toCollection("ID, Line_Number, Invoice.Invoice_Number, Invoice.Client_ID, Total, Quantity, Product.ID")
 	
 	return $returnObject
 	
@@ -421,13 +425,13 @@ Function _initBot() : cs:C1710.AIKit.OpenAIChatHelper
 		"**IMPORTANT**\n"+\
 		"When calling tools, always include all required arguments in valid JSON. Do not call a tool with empty arguments. If a value is missing, choose a reasonable default.\n"+\
 		"Always double check tools results before answering. Especially when they rely on vector search. Indeed they may return results not matching with your search intention.\n"+\
-		"When tool callings returns data not related with the initial question, or that you cannot use to answer, avoid detailing such results too much and stay short.\n"+\
+		"When tool calling returns data not related with the initial question, or that you cannot use to answer, avoid detailing such results too much and stay short.\n"+\
 		"**CUSTOM URL HANDLING**\n"+\
 		"Tools responses give information about the form to open when available, the dataClass and entities ID\n"+\
 		"When you display any element coming from a tool response, you must use a custom url so that the user can open the corresponding form\n"+\
 		"Such custom url must follow the following syntax examples:\n"+\
 		"<a href=\"myapp://openform?form=Products&dataClass=PRODUCTS&entities=989511\">A single product</a>\n"+\
-		"<a href=\"myapp://openform?form=Invoices&dataClass=INVOICESS&entities=654KJY\">A list of invoices</a>\n"+\
+		"<a href=\"myapp://openform?form=Invoices&dataClass=INVOICESS&entities=654KJY,6467HGS,79864JSD\">A list of invoices</a>\n"+\
 		"**NOTES**:\n"+\
 		"The end-user sometimes asks irrelevant questions, not related to persons, skills, job position or locations.\n"+\
 		"In such case, and only in such case, do not execute any tool and invite the user to ask more appropriate questions.\n"

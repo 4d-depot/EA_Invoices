@@ -49,7 +49,11 @@
             },
             "top": {
               "type": "number",
-              "description": "Maximum number of results to return. If not provided, defaults to the system's maxTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+              "description": "Maximum number of results to return. If not provided, defaults to the system's defaultTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+            },
+            "countOnly": {
+              "type": "boolean",
+              "description": "When true, returns only count information (total, totalFiltered, totalSent) without entity data, saving tokens. When false or omitted, returns full entity data. Use this when you only need to know how many entities match the criteria, not the actual data."
             }
           },
           "minProperties": 1,
@@ -136,7 +140,11 @@
             },
             "top": {
               "type": "number",
-              "description": "Maximum number of results to return. If not provided, defaults to the system's maxTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+              "description": "Maximum number of results to return. If not provided, defaults to the system's defaultTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+            },
+            "countOnly": {
+              "type": "boolean",
+              "description": "When true, returns only count information (total, totalFiltered, totalSent) without entity data, saving tokens. When false or omitted, returns full entity data. Use this when you only need to know how many entities match the criteria, not the actual data."
             }
           },
           "minProperties": 1,
@@ -218,7 +226,11 @@
             },
             "top": {
               "type": "number",
-              "description": "Maximum number of results to return. If not provided, defaults to the system's maxTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+              "description": "Maximum number of results to return. If not provided, defaults to the system's defaultTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+            },
+            "countOnly": {
+              "type": "boolean",
+              "description": "When true, returns only count information (total, totalFiltered, totalSent) without entity data, saving tokens. When false or omitted, returns full entity data. Use this when you only need to know how many entities match the criteria, not the actual data."
             }
           },
           "minProperties": 1,
@@ -321,7 +333,11 @@
             },
             "top": {
               "type": "number",
-              "description": "Maximum number of results to return. If not provided, defaults to the system's maxTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+              "description": "Maximum number of results to return. If not provided, defaults to the system's defaultTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+            },
+            "countOnly": {
+              "type": "boolean",
+              "description": "When true, returns only count information (total, totalFiltered, totalSent) without entity data, saving tokens. When false or omitted, returns full entity data. Use this when you only need to know how many entities match the criteria, not the actual data."
             }
           },
           "minProperties": 1,

@@ -316,7 +316,7 @@ table {
     overflow-x: auto;
 }
 
-thead, tbody {
+thead, tbody, tfoot {
     display: table;
     width: 100%;
     table-layout: fixed;
@@ -328,7 +328,6 @@ tr {
 
 th, td { 
     padding: 12px !important; 
-    text-align: left !important; 
     border-bottom: 1px solid #e5e7eb !important;
     word-wrap: break-word;
     overflow: hidden;
@@ -339,7 +338,25 @@ th, td {
 th { 
     background: #f8fafc !important; 
     font-weight: 600; 
-    color: #374151; 
+    color: #374151;
+    text-align: left !important;
+}
+
+/* Preserve alignment attributes on td elements */
+td[align="right"] {
+    text-align: right !important;
+}
+
+td[align="center"] {
+    text-align: center !important;
+}
+
+td[align="left"] {
+    text-align: left !important;
+}
+
+td:not([align]) {
+    text-align: left !important;
 }
 
 tr:hover { 

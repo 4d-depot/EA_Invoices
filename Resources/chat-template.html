@@ -18,10 +18,21 @@
     <script>
         // Helper to apply inline styles to HTML tables for clipboard compatibility
         function applyInlineStylesToTables(html) {
+            // First handle th tags that already have style attributes (preserve existing styles)
+            html = html.replace(/<th([^>]*style="[^"]*")([^>]*)>/g, function(match, styleAttr, rest) {
+                // Keep existing style attribute as is
+                return '<th' + styleAttr + rest + '>';
+            });
+            
+            // Then apply default styles to th tags without style attributes
+            html = html.replace(/<th(?![^>]*style=)([^>]*)>/g, '<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; background: #f8fafc; font-weight: 600;"$1>');
+            
+            // Handle td tags - preserve align attribute by converting to style
+            html = html.replace(/<td([^>]*)align="right"([^>]*)>/g, '<td$1$2 style="padding: 12px; text-align: right; border: 1px solid #e5e7eb;">');
+            html = html.replace(/<td(?![^>]*style=)(?![^>]*align=)([^>]*)>/g, '<td style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;"$1>');
+            
             return html
                 .replace(/<table/g, '<table style="border-collapse: collapse; width: 100%; margin: 12px 0;"')
-                .replace(/<th/g, '<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; background: #f8fafc; font-weight: 600;"')
-                .replace(/<td/g, '<td style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;"')
                 .replace(/<tr/g, '<tr style="border-bottom: 1px solid #e5e7eb;"');
         }
         
