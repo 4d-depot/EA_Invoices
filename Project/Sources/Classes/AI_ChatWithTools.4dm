@@ -394,34 +394,18 @@ Function _initBot() : cs:C1710.AIKit.OpenAIChatHelper
 		"**INSTRUCTIONS**\n"+\
 		"Analyze questions and answer step by step.\n"+\
 		"Use the tools at your disposal to answer everytime you think they are relevant.\n"+\
-		"**FORMATING**\n"+\
-		"Use HTML everytime.\n"+\
-		"Use bullet lists and Tables everytime everytime necessary\n"+\
-		"**CHARTS AND VISUALIZATIONS**\n"+\
-		"When presenting data that would benefit from visualization (rankings, comparisons, trends, distributions), create an interactive chart using this format:\n"+\
-		"<chart>\n"+\
-		"{\n"+\
-		"  \"type\": \"bar\",\n"+\
-		"  \"data\": {\n"+\
-		"    \"labels\": [\"Label1\", \"Label2\", \"Label3\"],\n"+\
-		"    \"datasets\": [{\n"+\
-		"      \"label\": \"Dataset Label\",\n"+\
-		"      \"data\": [10, 20, 15],\n"+\
-		"      \"backgroundColor\": [\"#4caf50\", \"#2196f3\", \"#ff9800\"]\n"+\
-		"    }]\n"+\
-		"  },\n"+\
-		"  \"options\": {\n"+\
-		"    \"responsive\": true,\n"+\
-		"    \"plugins\": {\n"+\
-		"      \"legend\": { \"display\": false },\n"+\
-		"      \"title\": { \"display\": true, \"text\": \"Chart Title\" }\n"+\
-		"    },\n"+\
-		"    \"scales\": { \"y\": { \"beginAtZero\": true } }\n"+\
-		"  }\n"+\
-		"}\n"+\
-		"</chart>\n"+\
-		"Chart types available: bar, line, pie, doughnut, radar, polarArea.\n"+\
-		"Use vibrant colors for better visual appeal. Generate charts for top N queries, comparisons, and numerical data.\n"+\
+		"**FORMATTING**\n"+\
+		"Always use HTML. Use bullet lists and tables when presenting structured data.\n"+\
+		"**CHARTS**\n"+\
+		"Create charts for rankings, comparisons, trends, or distributions. Format: <chart>{...JSON...}</chart>\n"+\
+		"Available types: bar, line, pie, doughnut, radar, polarArea. Always include:\n"+\
+		"- \"type\": chart type\n"+\
+		"- \"data.labels\": array of x-axis labels\n"+\
+		"- \"data.datasets\": array with \"label\", \"data\" (numeric array), \"backgroundColor\" (color array), \"borderWidth\": 0\n"+\
+		"- \"options.responsive\": true\n"+\
+		"- \"options.plugins.title\": {\"display\": true, \"text\": \"Chart Title\"}\n"+\
+		"- \"options.scales.y.beginAtZero\": true (for bar/line charts)\n"+\
+		"Use distinct vibrant colors (e.g., #4caf50, #2196f3, #ff9800, #e91e63, #9c27b0). Set \"legend.display\" to false for single datasets, true for multiple.\n"+\
 		"**IMPORTANT**\n"+\
 		"When calling tools, always include all required arguments in valid JSON. Do not call a tool with empty arguments. If a value is missing, choose a reasonable default.\n"+\
 		"Always double check tools results before answering. Especially when they rely on vector search. Indeed they may return results not matching with your search intention.\n"+\

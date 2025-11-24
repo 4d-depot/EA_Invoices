@@ -16,26 +16,6 @@
     <div class="link-tooltip" id="linkTooltip"></div>
     
     <script>
-        // Helper to apply inline styles to HTML tables for clipboard compatibility
-        function applyInlineStylesToTables(html) {
-            // First handle th tags that already have style attributes (preserve existing styles)
-            html = html.replace(/<th([^>]*style="[^"]*")([^>]*)>/g, function(match, styleAttr, rest) {
-                // Keep existing style attribute as is
-                return '<th' + styleAttr + rest + '>';
-            });
-            
-            // Then apply default styles to th tags without style attributes
-            html = html.replace(/<th(?![^>]*style=)([^>]*)>/g, '<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; background: #f8fafc; font-weight: 600;"$1>');
-            
-            // Handle td tags - preserve align attribute by converting to style
-            html = html.replace(/<td([^>]*)align="right"([^>]*)>/g, '<td$1$2 style="padding: 12px; text-align: right; border: 1px solid #e5e7eb;">');
-            html = html.replace(/<td(?![^>]*style=)(?![^>]*align=)([^>]*)>/g, '<td style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;"$1>');
-            
-            return html
-                .replace(/<table/g, '<table style="border-collapse: collapse; width: 100%; margin: 12px 0;"')
-                .replace(/<tr/g, '<tr style="border-bottom: 1px solid #e5e7eb;"');
-        }
-        
         // Helper to update button feedback state
         function updateCopyButtonState(button, text, cssClass, duration = 2000) {
             const originalText = button.textContent;
@@ -55,13 +35,12 @@
                 if (!table) return;
                 
                 // Extract table data
-                let tsvData = '';
-                let htmlData = '<table border="1" cellspacing="0" cellpadding="4">';
+                const tsvRows = [];
+                const htmlRows = [];
                 
                 // Process header rows - check both thead and first row if no thead
                 let headerRows = table.querySelectorAll('thead tr');
                 if (headerRows.length === 0) {
-                    // No thead, check if first row has th elements
                     const firstRow = table.querySelector('tr');
                     if (firstRow && firstRow.querySelector('th')) {
                         headerRows = [firstRow];
@@ -72,37 +51,29 @@
                     const cells = row.querySelectorAll('th');
                     if (cells.length > 0) {
                         const rowData = Array.from(cells).map(cell => cell.textContent.trim());
-                        tsvData += rowData.join('\t') + '\n';
-                        htmlData += '<tr>' + Array.from(cells).map(cell => `<th>${cell.textContent.trim()}</th>`).join('') + '</tr>';
+                        tsvRows.push(rowData.join('\t'));
+                        htmlRows.push('<tr>' + rowData.map(cell => `<th>${cell}</th>`).join('') + '</tr>');
                     }
                 });
                 
                 // Process body rows
                 const bodyRows = table.querySelectorAll('tbody tr');
-                if (bodyRows.length === 0) {
-                    // No tbody, get all tr elements except those already processed as headers
-                    const allRows = table.querySelectorAll('tr');
-                    allRows.forEach(row => {
-                        // Skip if this row only has th elements (it's a header)
-                        if (row.querySelector('th') && !row.querySelector('td')) return;
-                        
-                        const cells = row.querySelectorAll('td');
-                        if (cells.length > 0) {
-                            const rowData = Array.from(cells).map(cell => cell.textContent.trim());
-                            tsvData += rowData.join('\t') + '\n';
-                            htmlData += '<tr>' + Array.from(cells).map(cell => `<td>${cell.textContent.trim()}</td>`).join('') + '</tr>';
-                        }
-                    });
-                } else {
-                    bodyRows.forEach(row => {
-                        const cells = row.querySelectorAll('td');
-                        const rowData = Array.from(cells).map(cell => cell.textContent.trim());
-                        tsvData += rowData.join('\t') + '\n';
-                        htmlData += '<tr>' + Array.from(cells).map(cell => `<td>${cell.textContent.trim()}</td>`).join('') + '</tr>';
-                    });
-                }
+                const rowsToProcess = bodyRows.length === 0 ? 
+                    Array.from(table.querySelectorAll('tr')).filter(row => 
+                        !(row.querySelector('th') && !row.querySelector('td'))
+                    ) : bodyRows;
                 
-                htmlData += '</table>';
+                rowsToProcess.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length > 0) {
+                        const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+                        tsvRows.push(rowData.join('\t'));
+                        htmlRows.push('<tr>' + rowData.map(cell => `<td>${cell}</td>`).join('') + '</tr>');
+                    }
+                });
+                
+                const tsvData = tsvRows.join('\n') + '\n';
+                const htmlData = '<table border="1" cellspacing="0" cellpadding="4">' + htmlRows.join('') + '</table>';
                 
                 // Copy both TSV (for Excel) and HTML (for Word/Docs) to clipboard
                 const clipboardItem = new ClipboardItem({
@@ -128,7 +99,7 @@
         }
         
         // Function to copy assistant message content to clipboard
-        async function copyMessageContent(button, messageIndex) {
+        async function copyMessageContent(button) {
             try {
                 // Get the message content element
                 const messageDiv = button.closest('.assistant-message');
@@ -282,6 +253,19 @@
                     chartConfig.options = {};
                 }
                 
+                // Ensure scales configuration exists and disable borders
+                if (!chartConfig.options.scales) {
+                    chartConfig.options.scales = {};
+                }
+                if (chartConfig.options.scales.x) {
+                    if (!chartConfig.options.scales.x.grid) chartConfig.options.scales.x.grid = {};
+                    chartConfig.options.scales.x.grid.drawBorder = false;
+                }
+                if (chartConfig.options.scales.y) {
+                    if (!chartConfig.options.scales.y.grid) chartConfig.options.scales.y.grid = {};
+                    chartConfig.options.scales.y.grid.drawBorder = false;
+                }
+                
                 // For pie/doughnut charts, maintain aspect ratio to keep them circular
                 // For other charts, allow stretching to fill container
                 const isPieChart = chartConfig.type === 'pie' || chartConfig.type === 'doughnut';
@@ -294,8 +278,6 @@
                 console.error('renderChart error:', error);
             }
         }
-        
-
         
         // Function to clean up incomplete tags and fix unclosed tags
         function cleanupHTML(html) {
