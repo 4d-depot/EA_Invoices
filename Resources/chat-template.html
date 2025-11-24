@@ -145,6 +145,52 @@
                 const thinkTags = clonedContent.querySelectorAll('.think-tag');
                 thinkTags.forEach(tag => tag.remove());
                 
+                // Remove table copy buttons
+                const tableCopyButtons = clonedContent.querySelectorAll('.table-copy-button');
+                tableCopyButtons.forEach(btn => btn.remove());
+                
+                // Apply inline styles to tables for Word compatibility
+                const tables = clonedContent.querySelectorAll('table');
+                tables.forEach(table => {
+                    // Apply table styles
+                    table.style.borderCollapse = 'collapse';
+                    table.style.width = '100%';
+                    table.style.margin = '12px 0';
+                    
+                    // Apply styles to all th elements
+                    const ths = table.querySelectorAll('th');
+                    ths.forEach(th => {
+                        if (!th.getAttribute('style') || !th.getAttribute('style').includes('text-align')) {
+                            th.style.padding = '12px';
+                            th.style.textAlign = 'left';
+                            th.style.border = '1px solid #e5e7eb';
+                            th.style.background = '#f8fafc';
+                            th.style.fontWeight = '600';
+                        }
+                    });
+                    
+                    // Apply styles to all td elements
+                    const tds = table.querySelectorAll('td');
+                    tds.forEach(td => {
+                        td.style.padding = '12px';
+                        td.style.border = '1px solid #e5e7eb';
+                        
+                        // Preserve align attribute
+                        const align = td.getAttribute('align');
+                        if (align) {
+                            td.style.textAlign = align;
+                        } else if (!td.style.textAlign) {
+                            td.style.textAlign = 'left';
+                        }
+                    });
+                    
+                    // Apply styles to all tr elements
+                    const trs = table.querySelectorAll('tr');
+                    trs.forEach(tr => {
+                        tr.style.borderBottom = '1px solid #e5e7eb';
+                    });
+                });
+                
                 // Convert charts to images
                 const chartContainers = clonedContent.querySelectorAll('.chart-container[data-chart-rendered="true"]');
                 const chartPromises = Array.from(chartContainers).map(async (container) => {
@@ -184,8 +230,8 @@
                 
                 await Promise.all(chartPromises);
                 
-                // Get HTML content with inline styles for better paste compatibility
-                const htmlContent = applyInlineStylesToTables(clonedContent.innerHTML);
+                // Get HTML content - styles already applied to DOM elements
+                const htmlContent = clonedContent.innerHTML;
                 
                 // Extract plain text as fallback
                 let textContent = clonedContent.textContent.trim();

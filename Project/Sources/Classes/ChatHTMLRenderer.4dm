@@ -294,7 +294,10 @@ Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 		// Wrap HTML content - JavaScript cleanupHTML handles incomplete tags
 		return "<div class=\"html-content\">"+ $cleanContent+"</div>"
 	Else 
-		return This._escapeHTML($processedContent)  // Escape the processed content (after think processing)
+		// Escape HTML but preserve line breaks by converting to <br>
+		var $escaped : Text:=This._escapeHTML($processedContent)
+		$escaped:=Replace string($escaped; Char(Line feed); "<br>"; *)
+		return $escaped
 	End if
 
 
