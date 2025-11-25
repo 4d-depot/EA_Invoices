@@ -213,6 +213,13 @@ Function tool_getInvoices($input : Object) : Object
 	var $validation; $returnObject : Object
 	var $entities : cs:C1710.INVOICESSelection:=ds:C1482.INVOICES.all()
 	
+	//Quick fix until JSON Validate properly handles dates in objects
+	//Temporarily put string in date fields
+	$input.Creation_Date:=$input.Creation_Date || {}
+	$input.Creation_Date.min:=($input.Creation_Date.min) ? String:C10($input.Creation_Date.min; "yyyy-MM-dd")+"T00:00:00" : ""  // date YYYY-MM-DD
+	$input.Creation_Date.max:=($input.Creation_Date.max) ? String:C10($input.Creation_Date.max; "yyyy-MM-dd")+"T00:00:00" : ""  // date YYYY-MM-DD
+	// end of fix
+	
 	$validation:=JSON Validate:C1456($input; This:C1470._getToolArgumentsSchema(This:C1470._functionName(Call chain:C1662)))
 	If (Not:C34($validation.success))
 		return {error: "Could not validate input parameters against JSON Schema, call the tool again with proper input parameters"}
@@ -223,6 +230,9 @@ Function tool_getInvoices($input : Object) : Object
 	$input.Total:=$input.Total || {}
 	$input.Total.min:=$input.Total.min || 0
 	$input.Total.max:=$input.Total.max || 9999999
+	$input.Creation_Date:=$input.Creation_Date || {}
+	$input.Creation_Date.min:=($input.Creation_Date.min) ? Date:C102($input.Creation_Date.min) : Date:C102("2000-01-01")  // date YYYY-MM-DD
+	$input.Creation_Date.max:=($input.Creation_Date.max) ? Date:C102($input.Creation_Date.max) : Date:C102("2350-12-31")  // date YYYY-MM-DD
 	$input.orderBy:=($input.orderBy) || {}
 	$input.orderBy.field:=($input.orderBy.field) || "Total"
 	$input.orderBy.order:=($input.orderBy.order) || "desc"
@@ -239,7 +249,7 @@ Function tool_getInvoices($input : Object) : Object
 		$entities:=$entities.query("Client_ID = :1"; $input.Client_ID)
 	End if 
 	
-	$entities:=$entities.query("Invoice_Number = :1 and Total >= :2 and Total <= :3 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Invoice_Number; $input.Total.min; $input.Total.max)
+	$entities:=$entities.query("Invoice_Number = :1 and Total >= :2 and Total <= :3 and Creation_Date >= :4 and Creation_Date <= :5 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Invoice_Number; $input.Total.min; $input.Total.max; $input.Creation_Date.min; $input.Creation_Date.max)
 	$returnObject.counts.totalFiltered:=$entities.length
 	If ($returnObject.totalEntities>$input.top)
 		$entities:=$entities.slice(0; $input.top)
@@ -395,21 +405,21 @@ Function _initBot() : cs:C1710.AIKit.OpenAIChatHelper
 		"Analyze questions and answer step by step.\n"+\
 		"Use the tools at your disposal to answer everytime you think they are relevant.\n"+\
 		"**FORMATTING**\n"+\
-		"Always use HTML. Use bullet lists and tables when presenting structured data.\n"+\
+		"Always use HTML. Avoid markdown. Use bullet lists and tables when presenting structured data.\n"+\
+		"**IMPORTANT**\n"+\
+		"When calling tools, always include all required arguments in valid JSON. Do not call a tool with empty arguments. If a value is missing, choose a reasonable default.\n"+\
+		"Always double check tools results before answering. Especially when they rely on vector search. Indeed they may return results not matching with your search intention.\n"+\
+		"When tool calling returns data not related with the initial question, or that you cannot use to answer, avoid detailing such results too much and stay short.\n"+\
 		"**CHARTS**\n"+\
 		"Create charts for rankings, comparisons, trends, or distributions. Format: <chart>{...JSON...}</chart>\n"+\
 		"Available types: bar, line, pie, doughnut, radar, polarArea. Always include:\n"+\
 		"- \"type\": chart type\n"+\
 		"- \"data.labels\": array of x-axis labels\n"+\
-		"- \"data.datasets\": array with \"label\", \"data\" (numeric array), \"backgroundColor\" (color array), \"borderWidth\": 0\n"+\
+		"- \"data.datasets\": array with \"label\", \"data\" (numeric array), \"backgroundColor\" (color array)\n"+\
 		"- \"options.responsive\": true\n"+\
 		"- \"options.plugins.title\": {\"display\": true, \"text\": \"Chart Title\"}\n"+\
 		"- \"options.scales.y.beginAtZero\": true (for bar/line charts)\n"+\
 		"Use distinct vibrant colors (e.g., #4caf50, #2196f3, #ff9800, #e91e63, #9c27b0). Set \"legend.display\" to false for single datasets, true for multiple.\n"+\
-		"**IMPORTANT**\n"+\
-		"When calling tools, always include all required arguments in valid JSON. Do not call a tool with empty arguments. If a value is missing, choose a reasonable default.\n"+\
-		"Always double check tools results before answering. Especially when they rely on vector search. Indeed they may return results not matching with your search intention.\n"+\
-		"When tool calling returns data not related with the initial question, or that you cannot use to answer, avoid detailing such results too much and stay short.\n"+\
 		"**CUSTOM URL HANDLING**\n"+\
 		"Tools responses give information about the form to open when available, the dataClass and entities ID\n"+\
 		"When you display any element coming from a tool response, you must use a custom url so that the user can open the corresponding form\n"+\

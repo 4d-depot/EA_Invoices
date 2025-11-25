@@ -351,11 +351,69 @@
             }
         }
         
+        // Function to extract style tags and inject them into document head
+        function extractAndInjectStyles(htmlContent) {
+            try {
+                // Create a temporary div to parse HTML
+                const temp = document.createElement('div');
+                temp.innerHTML = htmlContent;
+                
+                // Find all style tags
+                const styleTags = temp.querySelectorAll('style');
+                
+                styleTags.forEach((styleTag, index) => {
+                    // Create a unique ID for this style tag to avoid duplicates
+                    const styleId = 'dynamic-style-' + Date.now() + '-' + index;
+                    
+                    // Check if this style already exists
+                    if (!document.getElementById(styleId)) {
+                        // Create a new style element
+                        const newStyle = document.createElement('style');
+                        newStyle.id = styleId;
+                        newStyle.textContent = styleTag.textContent;
+                        
+                        // Scope the styles to .html-content to avoid affecting the whole page
+                        // This wraps all rules with .html-content prefix
+                        const scopedCSS = scopeStylesToContent(styleTag.textContent);
+                        newStyle.textContent = scopedCSS;
+                        
+                        // Inject into head
+                        document.head.appendChild(newStyle);
+                    }
+                });
+            } catch (error) {
+                console.error('extractAndInjectStyles error:', error);
+            }
+        }
+        
+        // Function to scope CSS rules to .html-content
+        function scopeStylesToContent(css) {
+            try {
+                // Simple scoping: prefix each selector with .html-content
+                // This is a basic implementation - may need refinement for complex CSS
+                return css.replace(/([^{}]+)\{/g, function(match, selector) {
+                    // Skip @-rules like @media, @keyframes
+                    if (selector.trim().startsWith('@')) {
+                        return match;
+                    }
+                    // Add .html-content scope
+                    const trimmedSelector = selector.trim();
+                    return '.html-content ' + trimmedSelector + ' {';
+                });
+            } catch (error) {
+                console.error('scopeStylesToContent error:', error);
+                return css;
+            }
+        }
+        
         // Function to update messages via 4D JavaScript injection
         function updateMessages(htmlContent) {
             try {
                 const container = document.querySelector('.chat-container');
                 if (container) {
+                    // Extract and inject <style> tags from HTML content
+                    extractAndInjectStyles(htmlContent);
+                    
                     // Check if we have any streaming chart skeletons
                     const hasStreamingSkeletons = container.querySelector('.chart-container.streaming') !== null;
                     

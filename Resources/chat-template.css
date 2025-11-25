@@ -315,61 +315,67 @@ body {
     font-style: normal; 
 }
 
-/* Table styling */
-table { 
-    width: 100% !important; 
-    border-collapse: collapse !important; 
-    margin: 12px 0 !important; 
-    background: white !important; 
-    border-radius: 8px; 
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+/* Table styling - lower specificity to allow model's inline styles to override */
+.message-content table:not([style*="border-collapse"]) { 
+    border-collapse: collapse;
+}
+
+.message-content table:not([style*="width"]) {
+    width: 100%;
+}
+
+.message-content table {
+    margin: 12px 0;
     position: relative;
     max-width: 100%;
     overflow-x: auto;
 }
 
-th, td { 
-    padding: 12px !important; 
-    border: 1px solid var(--color-border) !important;
+.message-content th, 
+.message-content td { 
+    padding: 12px;
+    border: 1px solid #e5e7eb;
     word-wrap: break-word;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-th { 
-    background: var(--color-table-header) !important; 
-    font-weight: 600; 
-    color: var(--color-text-dark);
-    text-align: left !important;
+/* Only apply default header styling if no background color specified */
+.message-content th:not([style*="background"]) { 
+    background: #f8fafc;
+}
+
+.message-content th {
+    font-weight: 600;
 }
 
 /* Preserve alignment attributes on td elements */
-td[align="right"] {
+.message-content td[align="right"] {
     text-align: right !important;
 }
 
-td[align="center"] {
+.message-content td[align="center"] {
     text-align: center !important;
 }
 
-td[align="left"] {
+.message-content td[align="left"] {
     text-align: left !important;
 }
 
-td:not([align]) {
-    text-align: left !important;
+.message-content td:not([align]) {
+    text-align: left;
 }
 
-tr:hover { 
-    background: var(--color-table-hover); 
+.message-content tr:hover { 
+    background: #f9fafb; 
 }
 
-tr:last-child td { 
+.message-content tr:last-child td { 
     border-bottom: none; 
 }
 
 /* Table row skeleton for streaming - completely hide incomplete rows */
-tr.row-streaming {
+.message-content tr.row-streaming {
     display: none !important;
 }
 

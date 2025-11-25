@@ -250,7 +250,19 @@ Function _processChartSections($content : Text; $messageIndex : Integer) : Text
 				$chartContent:=Substring($result; $chartMarker.startPos+7; $chartMarker.endPos-$chartMarker.startPos-7)
 				$afterChart:=Substring($result; $chartMarker.endPos+8)
 				
+				// Trim excessive line breaks around chart
+				// Remove trailing line breaks from before section
+				While ((Length($beforeChart)>0) && ((Substring($beforeChart; Length($beforeChart); 1)=Char(Line feed)) || (Substring($beforeChart; Length($beforeChart); 1)=Char(Carriage return))))
+					$beforeChart:=Substring($beforeChart; 1; Length($beforeChart)-1)
+				End while 
+				
+				// Remove leading line breaks from after section
+				While ((Length($afterChart)>0) && ((Substring($afterChart; 1; 1)=Char(Line feed)) || (Substring($afterChart; 1; 1)=Char(Carriage return))))
+					$afterChart:=Substring($afterChart; 2)
+				End while 
+				
 				$chartHTML:=This._generateChartHTML($chartContent; False; $chartId)
+				// No line breaks around chart - it's a block element with CSS margins
 				$result:=$beforeChart+$chartHTML+$afterChart
 			Else 
 				// Streaming chart - show skeleton
@@ -291,6 +303,7 @@ Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 	$contentHasHTML:=This._hasHTMLTags($cleanContent)
 	
 	If ($contentHasHTML)
+		// HTML content doesn't need line breaks converted - HTML handles spacing
 		// Wrap HTML content - JavaScript cleanupHTML handles incomplete tags
 		return "<div class=\"html-content\">"+ $cleanContent+"</div>"
 	Else 

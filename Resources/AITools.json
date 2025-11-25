@@ -185,7 +185,7 @@
       "type": "function",
       "function": {
         "name": "tool_getInvoices",
-        "description": "Search for invoices in the database by invoice number, client ID, or total amount range. Use wildcards (@) for partial matching. Returns matching invoices with their ID, Invoice_Number, Client_ID, Creation_Date, Paid status, Payment_Date, and Total. Results can be sorted by any field and limited to a maximum number. Returns a counts object with total, totalFiltered, and totalSent to indicate if results were truncated. If Client_ID is provided and not 'any', it filters invoices for that specific client.",
+        "description": "Search for invoices in the database by invoice number, client ID, creation date range, or total amount range. Use wildcards (@) for partial matching. Returns matching invoices with their ID, Invoice_Number, Client_ID, Creation_Date, Paid status, Payment_Date, and Total. Results can be sorted by any field and limited to a maximum number. Returns a counts object with total, totalFiltered, and totalSent to indicate if results were truncated. If Client_ID is provided and not 'any', it filters invoices for that specific client.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -207,6 +207,19 @@
                 "max": {
                   "type": "number",
                   "description": "Maximum invoice total amount (inclusive). Defaults to 9999999 if not provided."
+                }
+              }
+            },
+            "Creation_Date": {
+              "type": "object",
+              "properties": {
+                "min": {
+                  "type": "string",
+                  "description": "Minimum creation date (inclusive) in YYYY-MM-DD format. Example: '2025-01-01'. Defaults to '2000-01-01' if not provided."
+                },
+                "max": {
+                  "type": "string",
+                  "description": "Maximum creation date (inclusive) in YYYY-MM-DD format. Example: '2025-12-31'. Defaults to '2350-12-31' if not provided."
                 }
               }
             },
@@ -261,6 +274,16 @@
               "Total": {
                 "min": 500,
                 "max": 5000
+              }
+            }
+          },
+          {
+            "description": "Search for invoices created in 2025",
+            "value": {
+              "Invoice_Number": "@",
+              "Creation_Date": {
+                "min": "2025-01-01",
+                "max": "2025-12-31"
               }
             }
           }
