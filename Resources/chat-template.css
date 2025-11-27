@@ -269,31 +269,7 @@ body {
 
 /* Streaming states */
 .think-tag.streaming { 
-    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
-    animation: heartbeat 2.2s ease-in-out infinite;
-}
-
-@keyframes heartbeat {
-    0%, 100% {
-        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
-        transform: scale(1);
-        font-size: 12px;
-    }
-    25% {
-        box-shadow: 0 0 14px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.2);
-        transform: scale(1.015);
-        font-size: 12.2px;
-    }
-    50% {
-        box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
-        transform: scale(1.005);
-        font-size: 12.1px;
-    }
-    75% {
-        box-shadow: 0 0 16px rgba(59, 130, 246, 0.6), 0 0 24px rgba(59, 130, 246, 0.25);
-        transform: scale(1.02);
-        font-size: 12.3px;
-    }
+    /* No animation - just a subtle indicator */
 }
 
 .streaming-args { 
