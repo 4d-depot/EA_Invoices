@@ -11,7 +11,7 @@ singleton Class constructor()
 Function _normalizeLineBreaks($text : Text) : Text
 	// Convert literal \n to actual line breaks
 	return Replace string($text; "\\n"; Char(Line feed); *)
-
+	
 Function _createTag($tagType : Text; $content : Text; $isStreaming : Boolean) : Text
 	// Create consistent HTML tags for different content types
 	var $class : Text
@@ -32,7 +32,7 @@ Function _createTag($tagType : Text; $content : Text; $isStreaming : Boolean) : 
 	
 	// Don't add icon here - let JavaScript handle it for better control
 	return "<br><span class=\""+$class+"\" data-content=\""+This._escapeHTML($content)+"\">"+$content+"</span><br>"
-
+	
 Function _createPreview($text : Text; $maxLength : Integer) : Text
 	// Create a preview of text content by normalizing whitespace and trimming
 	var $preview : Text:=$text
@@ -47,10 +47,10 @@ Function _createPreview($text : Text; $maxLength : Integer) : Text
 	// Truncate if too long
 	If (Length($preview)>$maxLength)
 		$preview:=Substring($preview; 1; $maxLength-3)+"..."
-	End if
+	End if 
 	
 	return $preview
-
+	
 Function _escapeHTML($text : Text) : Text
 	// Escape HTML content with a single pass for better performance
 	var $escaped : Text:=$text
@@ -64,8 +64,8 @@ Function _escapeHTML($text : Text) : Text
 	
 	return $escaped
 	
-
-
+	
+	
 Function _cleanMarkdownCodeBlocks($content : Text) : Text
 	// Remove markdown code block markers like ```html...``` or ```...```
 	var $result : Text:=$content
@@ -93,8 +93,8 @@ Function _cleanMarkdownCodeBlocks($content : Text) : Text
 	$result:=Trim($result)
 	
 	return $result
-
-
+	
+	
 Function _hasHTMLTags($content : Text) : Boolean
 	// Check if content contains common HTML tags - optimized with early exit
 	var $htmlTags : Collection:=["<div"; "<p>"; "<ul>"; "<li>"; "<strong>"; "<br>"; "<table"; "<tr>"; "<td>"; "<th>"; "<h1>"; "<h2>"; "<h3>"; "<h4>"; "<h5>"; "<h6>"; "<span"; "<ol>"; "<a "; "<a>"]
@@ -107,8 +107,8 @@ Function _hasHTMLTags($content : Text) : Boolean
 	End for each 
 	
 	return False
-
-
+	
+	
 Function _detectChartMarker($content : Text) : Object
 	// Detect chart markers like <chart>...</chart> in content
 	// Returns {found: Boolean, startPos: Integer, endPos: Integer, isComplete: Boolean}
@@ -122,8 +122,8 @@ Function _detectChartMarker($content : Text) : Object
 	End if 
 	
 	return $result
-
-
+	
+	
 Function _generateChartHTML($chartData : Text; $isStreaming : Boolean; $chartId : Text) : Text
 	// Generate chart HTML with skeleton loader for streaming state
 	var $result : Text
@@ -150,7 +150,7 @@ Function _generateChartHTML($chartData : Text; $isStreaming : Boolean; $chartId 
 		var $title : Text:=This._extractChartTitle($chartConfig)
 		If ($title#"")
 			$result+="<div class=\"chart-title\">"+This._escapeHTML($title)+"</div>\n"
-		End if
+		End if 
 		
 		// Escape the JSON for HTML attribute
 		var $escapedConfig : Text:=JSON Stringify($chartConfig)
@@ -161,8 +161,8 @@ Function _generateChartHTML($chartData : Text; $isStreaming : Boolean; $chartId 
 	End if 
 	
 	return $result
-
-
+	
+	
 Function _extractChartTitle($chartConfig : Object) : Text
 	// Extract title from chart configuration
 	If ($chartConfig.options#Null)
@@ -175,9 +175,9 @@ Function _extractChartTitle($chartConfig : Object) : Text
 		End if 
 	End if 
 	return ""
-
-
-
+	
+	
+	
 Function _processThinkSections($content : Text) : Text
 	// Process content that contains <think> sections with state logic like tool calls
 	var $result : Text:=$content
@@ -222,8 +222,8 @@ Function _processThinkSections($content : Text) : Text
 	Until ($thinkStart=0)
 	
 	return $result
-
-
+	
+	
 Function _processChartSections($content : Text; $messageIndex : Integer) : Text
 	// Process content that contains <chart> sections similar to think sections
 	var $result : Text:=$content
@@ -277,8 +277,8 @@ Function _processChartSections($content : Text; $messageIndex : Integer) : Text
 	Until (Not($chartMarker.found))
 	
 	return $result
-
-
+	
+	
 Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 	// Process content without [PERSONS] marker but check for <think> and <chart> sections
 	var $processedContent : Text:=$content
@@ -305,15 +305,15 @@ Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 	If ($contentHasHTML)
 		// HTML content doesn't need line breaks converted - HTML handles spacing
 		// Wrap HTML content - JavaScript cleanupHTML handles incomplete tags
-		return "<div class=\"html-content\">"+ $cleanContent+"</div>"
+		return "<div class=\"html-content\">"+$cleanContent+"</div>"
 	Else 
 		// Escape HTML but preserve line breaks by converting to <br>
 		var $escaped : Text:=This._escapeHTML($processedContent)
 		$escaped:=Replace string($escaped; Char(Line feed); "<br>"; *)
 		return $escaped
-	End if
-
-
+	End if 
+	
+	
 Function _hasIncompleteToolArgs($toolCall : Object) : Boolean
 	// Check if tool call has incomplete or missing arguments
 	var $args : Text:=$toolCall.function.arguments
@@ -329,8 +329,8 @@ Function _hasIncompleteToolArgs($toolCall : Object) : Boolean
 	Catch
 		return True  // Parse error means incomplete
 	End try
-
-
+	
+	
 Function _hasToolResponse($toolCall : Object; $messages : Collection; $currentIndex : Integer) : Boolean
 	// Check if this tool call has a response by looking ahead in messages array
 	If ($toolCall.id=Null) || ($toolCall.id="")
@@ -346,8 +346,8 @@ Function _hasToolResponse($toolCall : Object; $messages : Collection; $currentIn
 	End for 
 	
 	return False
-
-
+	
+	
 Function _renderToolCallArgs($toolCall : Object) : Text
 	// Render tool call arguments as HTML
 	var $argumentsText : Text:=$toolCall.function.arguments
@@ -377,9 +377,9 @@ Function _renderToolCallArgs($toolCall : Object) : Text
 	$result:="<span class=\"tool-args\">"
 	$argCount:=0
 	For each ($argKey; $toolArgs)
-			If ($argCount>0)
-				$result+="<span class=\"arg-separator\">,</span>"
-			End if 
+		If ($argCount>0)
+			$result+="<span class=\"arg-separator\">,</span>"
+		End if 
 		$result+="<span class=\"arg-key\">"+This._escapeHTML($argKey)+":</span>"
 		// Handle both primitive values and objects/collections
 		Case of 
@@ -394,8 +394,8 @@ Function _renderToolCallArgs($toolCall : Object) : Text
 	$result+="</span>"
 	
 	return $result
-
-
+	
+	
 Function _processToolCalls($message : Object; $messages : Collection; $currentIndex : Integer) : Text
 	// Process all tool calls for a message
 	var $result : Text:=""
@@ -427,8 +427,8 @@ Function _processToolCalls($message : Object; $messages : Collection; $currentIn
 	End for each 
 	
 	return $result
-
-
+	
+	
 Function _generateContentHash($messages : Collection) : Text
 	// Generate a simple hash of the messages to detect if content changed
 	var $content : Text
@@ -443,7 +443,7 @@ Function _generateContentHash($messages : Collection) : Text
 	
 	return Generate digest($content; MD5 digest)
 	
-
+	
 	//MARK: -
 	//MARK: Public methods
 	
@@ -526,8 +526,8 @@ Function updateWebAreaWithJS($webAreaName : Text; $messages : Collection)
 	$messagesHTML:=Replace string($messagesHTML; Char(Tab); " "; *)  // Replace tabs with spaces
 	
 	WA EXECUTE JAVASCRIPT FUNCTION(*; $webAreaName; "updateMessages"; $jsResult; $messagesHTML)
-
-
+	
+	
 Function _cleanAndParseJSON($jsonContent : Text) : Object
 	// Shared helper to clean and parse JSON content
 	var $cleanJSON : Text:=$jsonContent

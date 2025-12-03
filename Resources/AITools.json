@@ -4,32 +4,32 @@
       "type": "function",
       "function": {
         "name": "tool_getProducts",
-        "description": "Search for products in the database by ID, reference code, name, or price range. Use wildcards (@) for partial matching. Returns matching products with their ID, Reference, Name, and Sale_Price. Results can be sorted by any field and limited to a maximum number. Returns a counts object with total, totalFiltered, and totalSent to indicate if results were truncated. If ID is provided, it performs a direct lookup before applying other filters.",
+        "description": "Search products by ID, reference, name, or price range. Use @ for wildcards. Returns ID, Reference, Name, Sale_Price. Counts object: 'total'=all in DB, 'totalFiltered'=matching criteria, 'totalSent'=returned (limited by 'top').",
         "parameters": {
           "type": "object",
           "properties": {
             "ID": {
               "type": "string",
-              "description": "Product ID for direct lookup. Use 'any' or omit to search by other criteria. When provided, searches for this specific product first, then applies other filters."
+              "description": "Product ID for direct lookup. Use 'any' or omit to search by other criteria."
             },
             "Reference": {
               "type": "string",
-              "description": "Product reference code. Supports wildcard matching with @. Example: 'PRD@' matches all references starting with PRD. Defaults to '@' (all) if not provided."
+              "description": "Product reference. Supports @ wildcard. Example: 'PRD@' matches references starting with PRD. Defaults to '@'."
             },
             "Name": {
               "type": "string",
-              "description": "Product name. Supports wildcard matching with @. Example: '@laptop@' matches any product name containing 'laptop'. Defaults to '@' (all) if not provided."
+              "description": "Product name. Supports @ wildcard. Example: '@laptop@' matches names containing 'laptop'. Defaults to '@'."
             },
             "Sale_Price": {
               "type": "object",
               "properties": {
                 "min": {
                   "type": "number",
-                  "description": "Minimum sale price (inclusive). Defaults to 0 if not provided."
+                  "description": "Min price (inclusive). Defaults to 0."
                 },
                 "max": {
                   "type": "number",
-                  "description": "Maximum sale price (inclusive). Defaults to 999999 if not provided."
+                  "description": "Max price (inclusive). Defaults to 999999."
                 }
               }
             },
@@ -38,89 +38,60 @@
               "properties": {
                 "field": {
                   "type": "string",
-                  "description": "Field name to sort by. Valid values: ID, Reference, Name, Sale_Price. Defaults to 'Name' if not provided."
+                  "description": "Sort field: ID, Reference, Name, Sale_Price. Defaults to 'Name'."
                 },
                 "order": {
                   "type": "string",
                   "enum": ["asc", "desc"],
-                  "description": "Sort order. Must be either 'asc' (ascending) or 'desc' (descending). Defaults to 'asc' if not provided."
+                  "description": "Sort order. Defaults to 'asc'."
                 }
               }
             },
             "top": {
               "type": "number",
-              "description": "Maximum number of results to return. If not provided, defaults to the system's defaultTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+              "description": "Max results to return. Defaults to system limit."
             },
             "countOnly": {
               "type": "boolean",
-              "description": "When true, returns only count information (total, totalFiltered, totalSent) without entity data, saving tokens. When false or omitted, returns full entity data. Use this when you only need to know how many entities match the criteria, not the actual data."
+              "description": "When true, returns only counts without entity data. Use to count matches without retrieving details."
             }
           },
           "minProperties": 1,
           "strict": true,
           "additionalProperties": false
-        },
-        "x-examples": [
-          {
-            "description": "Search for products with names containing 'computer' in the price range 500-2000",
-            "value": {
-              "Name": "@computer@",
-              "Sale_Price": {
-                "min": 500,
-                "max": 2000
-              }
-            }
-          },
-          {
-            "description": "Search for all products with reference starting with 'ELEC'",
-            "value": {
-              "Reference": "ELEC@"
-            }
-          },
-          {
-            "description": "Search for products priced under 100",
-            "value": {
-              "Reference": "",
-              "Name": "",
-              "Sale_Price": {
-                "min": 0,
-                "max": 100
-              }
-            }
-          }
-        ]
+        }
       }
     },
     {
       "type": "function",
       "function": {
         "name": "tool_getClients",
-        "description": "Search for clients in the database by ID, name, contact, or total sales range. Use wildcards (@) for partial matching. Returns matching clients with their ID, Name, Contact, City, State, Country, Discount_Rate, Total_Sales, and Comments. Results can be sorted by any field and limited to a maximum number. Returns a counts object with total, totalFiltered, and totalSent to indicate if results were truncated. If ID is provided, it performs a direct lookup before applying other filters.",
+        "description": "Search clients by ID, name, contact, or total sales range. Use @ for wildcards. Returns ID, Name, Contact, City, State, Country, Discount_Rate, Total_Sales, Comments. Counts object: 'total'=all in DB, 'totalFiltered'=matching criteria, 'totalSent'=returned (limited by 'top').",
         "parameters": {
           "type": "object",
           "properties": {
             "ID": {
               "type": "string",
-              "description": "Client ID for direct lookup. Use 'any' or omit to search by other criteria. When provided, searches for this specific client first, then applies other filters."
+              "description": "Client ID for direct lookup. Use 'any' or omit to search by other criteria."
             },
             "Name": {
               "type": "string",
-              "description": "Client name. Supports wildcard matching with @. Example: '@Smith@' matches any client name containing 'Smith'. Defaults to '@' (all) if not provided."
+              "description": "Client name. Supports @ wildcard. Example: '@Smith@' matches names containing 'Smith'. Defaults to '@'."
             },
             "Contact": {
               "type": "string",
-              "description": "Contact person name. Supports wildcard matching with @. Example: '@John@' matches any contact name containing 'John'. Defaults to '@' (all) if not provided."
+              "description": "Contact person. Supports @ wildcard. Defaults to '@'."
             },
             "Total_Sales": {
               "type": "object",
               "properties": {
                 "min": {
                   "type": "number",
-                  "description": "Minimum total sales amount (inclusive). Defaults to 0 if not provided."
+                  "description": "Min total sales (inclusive). Defaults to 0."
                 },
                 "max": {
                   "type": "number",
-                  "description": "Maximum total sales amount (inclusive). Defaults to 9999999 if not provided."
+                  "description": "Max total sales (inclusive). Defaults to 9999999."
                 }
               }
             },
@@ -129,84 +100,56 @@
               "properties": {
                 "field": {
                   "type": "string",
-                  "description": "Field name to sort by. Valid values: ID, Name, Contact, City, State, Country, Discount_Rate, Total_Sales, Comments. Defaults to 'Name' if not provided."
+                  "description": "Sort field: ID, Name, Contact, City, State, Country, Discount_Rate, Total_Sales, Comments. Defaults to 'Name'."
                 },
                 "order": {
                   "type": "string",
                   "enum": ["asc", "desc"],
-                  "description": "Sort order. Must be either 'asc' (ascending) or 'desc' (descending). Defaults to 'asc' if not provided."
+                  "description": "Sort order. Defaults to 'asc'."
                 }
               }
             },
             "top": {
               "type": "number",
-              "description": "Maximum number of results to return. If not provided, defaults to the system's defaultTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+              "description": "Max results to return. Defaults to system limit."
             },
             "countOnly": {
               "type": "boolean",
-              "description": "When true, returns only count information (total, totalFiltered, totalSent) without entity data, saving tokens. When false or omitted, returns full entity data. Use this when you only need to know how many entities match the criteria, not the actual data."
+              "description": "When true, returns only counts without entity data. Use to count matches without retrieving details."
             }
           },
           "minProperties": 1,
           "strict": true,
           "additionalProperties": false
-        },
-        "x-examples": [
-          {
-            "description": "Search for clients with names containing 'Tech' and total sales over 10000",
-            "value": {
-              "Name": "@Tech@",
-              "Total_Sales": {
-                "min": 10000,
-                "max": 9999999
-              }
-            }
-          },
-          {
-            "description": "Search for clients with contact person containing 'John'",
-            "value": {
-              "Contact": "@John@"
-            }
-          },
-          {
-            "description": "Search for clients with total sales between 5000 and 20000",
-            "value": {
-              "Name": "@",
-              "Total_Sales": {
-                "min": 5000,
-                "max": 20000
-              }
-            }
-          }
-        ]
+        }
       }
     },
     {
       "type": "function",
       "function": {
         "name": "tool_getInvoices",
-        "description": "Search for invoices in the database by invoice number, client ID, creation date range, or total amount range. Use wildcards (@) for partial matching. Returns matching invoices with their ID, Invoice_Number, Client_ID, Creation_Date, Paid status, Payment_Date, and Total. Results can be sorted by any field and limited to a maximum number. Returns a counts object with total, totalFiltered, and totalSent to indicate if results were truncated. If Client_ID is provided and not 'any', it filters invoices for that specific client.",
+        "description": "Search invoices by number, client ID, date range, or total range. Use @ for wildcards. Returns ID, Invoice_Number, Client_ID, Creation_Date, Paid, Payment_Date, Total. Counts object: 'total'=all in DB, 'totalFiltered'=matching criteria, 'totalSent'=returned (limited by 'top').",
         "parameters": {
           "type": "object",
           "properties": {
             "Invoice_Number": {
               "type": "string",
-              "description": "Invoice number. Supports wildcard matching with @. Example: 'INV@' matches all invoice numbers starting with INV. Defaults to '@' (all) if not provided."
+              "description": "Invoice number. Supports @ wildcard. Example: 'INV@' matches numbers starting with INV. Defaults to '@'."
             },
             "Client_ID": {
               "type": "string",
-              "description": "Client ID to filter invoices. Use 'any' or omit to search invoices from all clients. When provided with a specific ID, only returns invoices for that client."
+              "description": "Client ID filter. Use 'any' or omit to search all clients."
             },
             "Total": {
               "type": "object",
               "properties": {
                 "min": {
                   "type": "number",
-                  "description": "Minimum invoice total amount (inclusive). Defaults to 0 if not provided."
+                  "description": "Min total (inclusive). Defaults to 0."
                 },
                 "max": {
                   "type": "number",
-                  "description": "Maximum invoice total amount (inclusive). Defaults to 9999999 if not provided."
+                  "description": "Max total (inclusive). Defaults to 9999999."
                 }
               }
             },
@@ -215,11 +158,11 @@
               "properties": {
                 "min": {
                   "type": "string",
-                  "description": "Minimum creation date (inclusive) in YYYY-MM-DD format. Example: '2025-01-01'. Defaults to '2000-01-01' if not provided."
+                  "description": "Min date (YYYY-MM-DD). Defaults to '2000-01-01'."
                 },
                 "max": {
                   "type": "string",
-                  "description": "Maximum creation date (inclusive) in YYYY-MM-DD format. Example: '2025-12-31'. Defaults to '2350-12-31' if not provided."
+                  "description": "Max date (YYYY-MM-DD). Defaults to '2350-12-31'."
                 }
               }
             },
@@ -228,102 +171,64 @@
               "properties": {
                 "field": {
                   "type": "string",
-                  "description": "Field name to sort by. Valid values: ID, Invoice_Number, Client_ID, Creation_Date, Paid, Payment_Date, Total. Defaults to 'Total' if not provided."
+                  "description": "Sort field: ID, Invoice_Number, Client_ID, Creation_Date, Paid, Payment_Date, Total. Defaults to 'Total'."
                 },
                 "order": {
                   "type": "string",
                   "enum": ["asc", "desc"],
-                  "description": "Sort order. Must be either 'asc' (ascending) or 'desc' (descending). Defaults to 'desc' if not provided."
+                  "description": "Sort order. Defaults to 'desc'."
                 }
               }
             },
             "top": {
               "type": "number",
-              "description": "Maximum number of results to return. If not provided, defaults to the system's defaultTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+              "description": "Max results to return. Defaults to system limit."
             },
             "countOnly": {
               "type": "boolean",
-              "description": "When true, returns only count information (total, totalFiltered, totalSent) without entity data, saving tokens. When false or omitted, returns full entity data. Use this when you only need to know how many entities match the criteria, not the actual data."
+              "description": "When true, returns only counts without entity data. Use to count matches without retrieving details."
             }
           },
           "minProperties": 1,
           "strict": true,
           "additionalProperties": false
-        },
-        "x-examples": [
-          {
-            "description": "Search for invoices with total amount over 1000",
-            "value": {
-              "Invoice_Number": "@",
-              "Total": {
-                "min": 1000,
-                "max": 9999999
-              }
-            }
-          },
-          {
-            "description": "Search for invoices from a specific client",
-            "value": {
-              "Client_ID": "CLT123"
-            }
-          },
-          {
-            "description": "Search for invoices with number starting with 'INV2024' and total between 500 and 5000",
-            "value": {
-              "Invoice_Number": "INV2024@",
-              "Total": {
-                "min": 500,
-                "max": 5000
-              }
-            }
-          },
-          {
-            "description": "Search for invoices created in 2025",
-            "value": {
-              "Invoice_Number": "@",
-              "Creation_Date": {
-                "min": "2025-01-01",
-                "max": "2025-12-31"
-              }
-            }
-          }
-        ]
+        }
       }
     },
     {
       "type": "function",
       "function": {
         "name": "tool_getInvoiceLines",
-        "description": "Search for invoice lines in the database by invoice number, invoice ID, client ID, product ID, quantity range, or total amount range. Use wildcards (@) for partial matching on text fields. Returns detailed invoice line items with ID, Line_Number, Invoice.Invoice_Number, Invoice.Client_ID, Total, Quantity, Product.Reference, and Product.Name. Results can be sorted by any field and limited to a maximum number. Returns a counts object with total, totalFiltered, and totalSent to indicate if results were truncated. Useful for analyzing product sales, client purchases, or specific invoice details.",
+        "description": "Search invoice lines by invoice number/ID, client ID, product ID, quantity or total range. Use @ for wildcards. Returns ID, Line_Number, Invoice.Invoice_Number, Invoice.Client_ID, Total, Quantity, Product.Reference, Product.Name. Counts object: 'total'=all in DB, 'totalFiltered'=matching criteria, 'totalSent'=returned (limited by 'top').",
         "parameters": {
           "type": "object",
           "properties": {
             "Invoice_Number": {
               "type": "string",
-              "description": "Invoice number. Supports wildcard matching with @. Example: 'INV@' matches all invoice numbers starting with INV. Defaults to '@' (all) if not provided."
+              "description": "Invoice number. Supports @ wildcard. Defaults to '@'."
             },
             "Invoice_ID": {
               "type": "string",
-              "description": "Invoice ID for direct lookup. Use 'any' or omit to search across all invoices. When provided, returns only lines from this specific invoice."
+              "description": "Invoice ID for direct lookup. Use 'any' or omit to search all invoices."
             },
             "Client_ID": {
               "type": "string",
-              "description": "Client ID to filter invoice lines. Use 'any' or omit to search across all clients. When provided, returns only lines from invoices belonging to this client."
+              "description": "Client ID filter. Use 'any' or omit to search all clients."
             },
             "Product_ID": {
               "type": "string",
-              "description": "Product ID to filter invoice lines. Use 'any' or omit to search across all products. When provided, returns only lines containing this specific product."
+              "description": "Product ID filter. Use 'any' or omit to search all products."
             },
             "Quantity": {
               "type": "object",
               "properties": {
                 "min": {
                   "type": "number",
-                  "description": "Minimum quantity (inclusive). Defaults to 0 if not provided."
+                  "description": "Min quantity (inclusive). Defaults to 0."
                 },
                 "max": {
                   "type": "number",
-                  "description": "Maximum quantity (inclusive). Defaults to 9999999 if not provided."
+                  "description": "Max quantity (inclusive). Defaults to 9999999."
                 }
               }
             },
@@ -332,11 +237,11 @@
               "properties": {
                 "min": {
                   "type": "number",
-                  "description": "Minimum line total amount (inclusive). Defaults to 0 if not provided."
+                  "description": "Min line total (inclusive). Defaults to 0."
                 },
                 "max": {
                   "type": "number",
-                  "description": "Maximum line total amount (inclusive). Defaults to 9999999 if not provided."
+                  "description": "Max line total (inclusive). Defaults to 9999999."
                 }
               }
             },
@@ -345,124 +250,96 @@
               "properties": {
                 "field": {
                   "type": "string",
-                  "description": "Field name to sort by. Valid values: ID, Line_Number, Total, Quantity. Defaults to 'Total' if not provided."
+                  "description": "Sort field: ID, Line_Number, Total, Quantity. Defaults to 'Total'."
                 },
                 "order": {
                   "type": "string",
                   "enum": ["asc", "desc"],
-                  "description": "Sort order. Must be either 'asc' (ascending) or 'desc' (descending). Defaults to 'desc' if not provided."
+                  "description": "Sort order. Defaults to 'desc'."
                 }
               }
             },
             "top": {
               "type": "number",
-              "description": "Maximum number of results to return. If not provided, defaults to the system's defaultTop limit. Use this to limit large result sets. The response will include counts object showing if results were truncated."
+              "description": "Max results to return. Defaults to system limit."
             },
             "countOnly": {
               "type": "boolean",
-              "description": "When true, returns only count information (total, totalFiltered, totalSent) without entity data, saving tokens. When false or omitted, returns full entity data. Use this when you only need to know how many entities match the criteria, not the actual data."
+              "description": "When true, returns only counts without entity data. Use to count matches without retrieving details."
             }
           },
           "minProperties": 1,
           "strict": true,
           "additionalProperties": false
-        },
-        "x-examples": [
-          {
-            "description": "Search for all invoice lines for a specific product",
-            "value": {
-              "Product_ID": "PRD123"
-            }
-          },
-          {
-            "description": "Search for invoice lines from a specific client with quantity over 10",
-            "value": {
-              "Client_ID": "CLT456",
-              "Quantity": {
-                "min": 10,
-                "max": 9999999
-              }
-            }
-          },
-          {
-            "description": "Search for high-value invoice lines (total over 1000) from invoices starting with 'INV2024'",
-            "value": {
-              "Invoice_Number": "INV2024@",
-              "Total": {
-                "min": 1000,
-                "max": 9999999
-              }
-            }
-          }
-        ]
+        }
       }
     },
     {
       "type": "function",
       "function": {
         "name": "tool_createInvoice",
-        "description": "Creates a new invoice with invoice lines in the database. Requires a valid Client_ID and at least one invoice line. Each invoice line must reference an existing Product_ID. The function automatically calculates line totals, taxes, and invoice totals. Returns success or error message.",
+        "description": "Creates a new invoice with lines. Requires valid Client_ID and at least one line with existing Product_ID. Auto-calculates totals and taxes.",
         "parameters": {
           "type": "object",
           "properties": {
             "Client_ID": {
               "type": "string",
-              "description": "Client ID (required). Must exist in the CLIENTS database. The invoice will be created for this client."
+              "description": "Client ID (required). Must exist in CLIENTS database."
             },
             "Creation_Date": {
               "type": "string",
-              "description": "Invoice creation date in YYYY-MM-DD format. Example: '2025-11-21'"
+              "description": "Creation date (YYYY-MM-DD)."
             },
             "Paid": {
               "type": "boolean",
-              "description": "Payment status. If true, Payment_Date, Payment_Method, and Payment_Reference should be provided."
+              "description": "If true, provide Payment_Date, Payment_Method, Payment_Reference."
             },
             "Payment_Date": {
               "type": "string",
-              "description": "Payment date in YYYY-MM-DD format. Only relevant if Paid is true. Example: '2025-11-21'"
+              "description": "Payment date (YYYY-MM-DD). Only if Paid=true."
             },
             "Payment_Method": {
               "type": "string",
-              "description": "Payment method (e.g., 'Credit Card', 'Bank Transfer', 'Check', 'Cash'). Only relevant if Paid is true."
+              "description": "Payment method (Credit Card, Bank Transfer, Check, Cash). Only if Paid=true."
             },
             "Payment_Reference": {
               "type": "string",
-              "description": "Payment reference number or transaction ID. Only relevant if Paid is true."
+              "description": "Payment reference/transaction ID. Only if Paid=true."
             },
             "ProForma": {
               "type": "boolean",
-              "description": "Whether this is a pro forma invoice (not a final invoice)."
+              "description": "True if pro forma invoice."
             },
             "Payment_Delay": {
               "type": "integer",
               "enum": [30, 60, 90],
-              "description": "Payment delay in days. Must be 30, 60, or 90 days."
+              "description": "Payment delay in days."
             },
             "Proforma_Number": {
               "type": "string",
-              "description": "Pro forma number if this is a pro forma invoice."
+              "description": "Pro forma number if applicable."
             },
             "Credit_Note": {
               "type": "boolean",
-              "description": "Whether this is a credit note (negative invoice)."
+              "description": "True if credit note."
             },
             "Lines_Fm_Invoices": {
               "type": "array",
-              "description": "Array of invoice lines (required). Must contain at least one line.",
+              "description": "Invoice lines (required, min 1).",
               "items": {
                 "type": "object",
                 "properties": {
                   "Product_ID": {
                     "type": "string",
-                    "description": "Product ID (required). Must exist in the PRODUCTS database. Product details (reference, name, price, tax rate) will be fetched automatically."
+                    "description": "Product ID (required). Must exist in PRODUCTS database."
                   },
                   "Quantity": {
                     "type": "integer",
-                    "description": "Quantity of the product (required). Must be a positive integer."
+                    "description": "Quantity (required). Positive integer."
                   },
                   "Discount_Rate": {
                     "type": "number",
-                    "description": "Discount rate as a percentage (0-100). Typically under 10. Example: 5 for 5% discount."
+                    "description": "Discount % (0-100)."
                   }
                 },
                 "required": ["Product_ID", "Quantity", "Discount_Rate"],
@@ -474,58 +351,7 @@
           "required": ["Client_ID", "Creation_Date", "Paid", "ProForma", "Payment_Delay", "Credit_Note", "Lines_Fm_Invoices"],
           "strict": true,
           "additionalProperties": false
-        },
-        "x-examples": [
-          {
-            "description": "Create a simple unpaid invoice with two products",
-            "value": {
-              "Client_ID": "123",
-              "Creation_Date": "2025-11-21",
-              "Paid": false,
-              "Payment_Date": "",
-              "Payment_Method": "",
-              "Payment_Reference": "",
-              "ProForma": false,
-              "Payment_Delay": 30,
-              "Proforma_Number": "",
-              "Credit_Note": false,
-              "Lines_Fm_Invoices": [
-                {
-                  "Product_ID": "456",
-                  "Quantity": 2,
-                  "Discount_Rate": 0
-                },
-                {
-                  "Product_ID": "789",
-                  "Quantity": 1,
-                  "Discount_Rate": 5
-                }
-              ]
-            }
-          },
-          {
-            "description": "Create a paid invoice with payment details",
-            "value": {
-              "Client_ID": "123",
-              "Creation_Date": "2025-11-15",
-              "Paid": true,
-              "Payment_Date": "2025-11-20",
-              "Payment_Method": "Bank Transfer",
-              "Payment_Reference": "TRX-2025-1234",
-              "ProForma": false,
-              "Payment_Delay": 30,
-              "Proforma_Number": "",
-              "Credit_Note": false,
-              "Lines_Fm_Invoices": [
-                {
-                  "Product_ID": "101",
-                  "Quantity": 5,
-                  "Discount_Rate": 10
-                }
-              ]
-            }
-          }
-        ]
+        }
       }
     }
   ]
