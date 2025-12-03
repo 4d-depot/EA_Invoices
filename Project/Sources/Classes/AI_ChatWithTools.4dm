@@ -160,7 +160,7 @@ Function tool_getProducts($input : Object) : Object
 	
 	$entities:=$entities.query("Reference = :1 and Name = :2 and Sale_Price >= :3 and Sale_Price <= :4 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Reference; $input.Name; $input.Sale_Price.min; $input.Sale_Price.max)
 	$returnObject.counts.totalFiltered:=$entities.length
-	If ($returnObject.totalEntities>$input.top)
+	If ($returnObject.counts.totalFiltered>$input.top)
 		$entities:=$entities.slice(0; $input.top)
 	End if 
 	$returnObject.counts.totalSent:=$entities.length
@@ -201,7 +201,7 @@ Function tool_getClients($input : Object) : Object
 	
 	$entities:=$entities.query("Name = :1 and Contact = :2 and Total_Sales >= :3 and Total_Sales <= :4 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Name; $input.Contact; $input.Total_Sales.min; $input.Total_Sales.max)
 	$returnObject.counts.totalFiltered:=$entities.length
-	If ($returnObject.totalEntities>$input.top)
+	If ($returnObject.counts.totalFiltered>$input.top)
 		$entities:=$entities.slice(0; $input.top)
 	End if 
 	$returnObject.counts.totalSent:=$entities.length
@@ -251,7 +251,7 @@ Function tool_getInvoices($input : Object) : Object
 	
 	$entities:=$entities.query("Invoice_Number = :1 and Total >= :2 and Total <= :3 and Creation_Date >= :4 and Creation_Date <= :5 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Invoice_Number; $input.Total.min; $input.Total.max; $input.Creation_Date.min; $input.Creation_Date.max)
 	$returnObject.counts.totalFiltered:=$entities.length
-	If ($returnObject.totalEntities>$input.top)
+	If ($returnObject.counts.totalFiltered>$input.top)
 		$entities:=$entities.slice(0; $input.top)
 	End if 
 	$returnObject.counts.totalSent:=$entities.length
@@ -308,7 +308,7 @@ Function tool_getInvoiceLines($input : Object) : Object
 	
 	$entities:=$entities.query("Total >= :1 and Total <= :2 and Quantity >= :3 and Quantity <= :4 order by "+$input.orderBy.field+" "+$input.orderBy.order; $input.Total.min; $input.Total.max; $input.Quantity.min; $input.Quantity.max)
 	$returnObject.counts.totalFiltered:=$entities.length
-	If ($returnObject.totalEntities>$input.top)
+	If ($returnObject.counts.totalFiltered>$input.top)
 		$entities:=$entities.slice(0; $input.top)
 	End if 
 	$returnObject.counts.totalSent:=$entities.length
