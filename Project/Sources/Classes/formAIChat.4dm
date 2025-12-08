@@ -1,9 +1,11 @@
 property webAreaInitialized : Boolean
 property prompt : Text
+property voiceConversationMode : Boolean
 
 Class constructor()
 	cs:C1710.AI_ChatWithTools.me.resetContext()
 	This:C1470.webAreaInitialized:=False:C215
+	This:C1470.voiceConversationMode:=False:C215
 	
 	//MARK: -
 	//MARK: Form & form objects event handlers
@@ -34,6 +36,8 @@ Function btnNewChatEventHandler($formEventCode : Integer)
 	cs:C1710.AI_ChatWithTools.me.resetContext()
 	//This.people:=Null
 	This:C1470.webAreaInitialized:=False:C215
+	This:C1470.voiceConversationMode:=False:C215
+	OBJECT SET TITLE:C194(*; "chkVoiceConversation"; "💬")
 	
 	var $templateFilename : Text
 	var $templatePath : Text
@@ -62,6 +66,18 @@ Function btnMicrophoneEventHandler($formEventCode : Integer)
 			// Toggle audio recording via JavaScript in the Web Area
 			WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "toggleAudioRecording"; $result)
 	End case 
+	
+Function startVoiceRecording()
+	// Start voice recording (used for continuous conversation mode)
+	var $result : Text
+	
+	This:C1470.ensureWebAreaInitialized()
+	
+	// Small delay to let the UI settle before starting new recording
+	DELAY PROCESS:C323(Current process:C322; 30)
+	
+	// Start recording via JavaScript
+	WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "startRecording"; $result)
 	
 Function btnCopyEventHandler($formEventCode : Integer)
 	var $messages : Collection
@@ -199,6 +215,11 @@ Function terminateChat()
 		EXECUTE METHOD IN SUBFORM:C1085("Subform"; Formula:C1597(Form:C1466.terminateChat($1; $2)); *; $timing; $peopleFound)
 	Else 
 		OBJECT SET VISIBLE:C603(*; "btn@"; True:C214)
+		
+		// If voice conversation mode is enabled, restart recording
+		If (This:C1470.voiceConversationMode)
+			This:C1470.startVoiceRecording()
+		End if 
 	End if 
 	
 Function progressChat($input : Object)
@@ -232,7 +253,9 @@ Function handleAudioData($url : Text)
 		$result:=This:C1470.transcribeWithWhisper($base64Data)
 		
 		If ($result.error#"")
-			// Show error to user
+			// Show error to user and disable voice conversation mode
+			This:C1470.voiceConversationMode:=False:C215
+			OBJECT SET TITLE:C194(*; "chkVoiceConversation"; "💬")
 			ALERT:C41($result.error)
 		Else 
 			If ($result.transcript#"")
@@ -340,7 +363,7 @@ Function transcribeWithWhisper($base64Audio : Text) : Object
 Function handleSpeechStatus($url : Text)
 	var $status : Text
 	
-	// Extract status from URL: myapp://speechstatus?status=recording|processing|stopped|error
+	// Extract status from URL: myapp://speechstatus?status=recording|processing|stopped|error|silence
 	$status:=Split string:C1554(Split string:C1554($url; "status=")[1]; "&")[0]
 	
 	Case of 
@@ -350,6 +373,11 @@ Function handleSpeechStatus($url : Text)
 			OBJECT SET TITLE:C194(*; "btnMicrophone"; "⏳")
 		: ($status="stopped")
 			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎤")
+		: ($status="silence")
+			// Recording contained no speech - disable voice conversation mode
+			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎤")
+			This:C1470.voiceConversationMode:=False:C215
+			OBJECT SET TITLE:C194(*; "chkVoiceConversation"; "💬")
 		: ($status="error")
 			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎤")
 			ALERT:C41("Microphone access denied. Please allow microphone access in System Settings.")

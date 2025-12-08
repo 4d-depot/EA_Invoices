@@ -209,6 +209,23 @@
 					"sizingX": "move",
 					"sizingY": "move",
 					"tooltip": "Voice input (speech to text)"
+				},
+				"chkVoiceConversation": {
+					"type": "button",
+					"text": "💬",
+					"top": 843,
+					"left": 625,
+					"width": 60,
+					"height": 36,
+					"events": [
+						"onClick"
+					],
+					"borderStyle": "none",
+					"method": "ObjectMethods/chkVoiceConversation.4dm",
+					"defaultButton": false,
+					"sizingX": "move",
+					"sizingY": "move",
+					"tooltip": "Continuous voice conversation"
 				}
 			},
 			"entryOrder": [
@@ -217,11 +234,12 @@
 				"btnNewChat",
 				"Web Area",
 				"btnCopy",
-				"btnMicrophone"
+				"btnMicrophone",
+				"chkVoiceConversation"
 			]
 		}
 	],
-	"geometryStamp": 2749,
+	"geometryStamp": 2750,
 	"editor": {
 		"activeView": "View 1",
 		"defaultView": "View 1",

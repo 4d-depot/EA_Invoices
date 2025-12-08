@@ -667,7 +667,9 @@
         const SILENCE_THRESHOLD = 15;  // Audio level below this is considered silence (0-255)
         const SILENCE_DURATION = 1500; // Stop after 1.5 seconds of silence
         const MIN_RECORDING_TIME = 500; // Minimum recording time before silence detection kicks in
+        const SPEECH_THRESHOLD = 25;   // Minimum max level to consider as speech (avoid sending pure silence)
         let recordingStartTime = 0;
+        let maxAudioLevel = 0;         // Track maximum audio level during recording
         
         // Toggle audio recording - called from 4D (non-blocking)
         function toggleAudioRecording() {
@@ -693,6 +695,7 @@
                 audioStream = stream;
                 audioChunks = [];
                 recordingStartTime = Date.now();
+                maxAudioLevel = 0;  // Reset max level for this recording
                 
                 // Set up audio analysis for silence detection
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -734,6 +737,14 @@
                     if (audioStream) {
                         audioStream.getTracks().forEach(track => track.stop());
                         audioStream = null;
+                    }
+                    
+                    // Check if recording contained actual speech
+                    if (maxAudioLevel < SPEECH_THRESHOLD) {
+                        console.log('Recording was silence only (max level: ' + maxAudioLevel + '), skipping transcription');
+                        // Notify 4D that recording was silent (no speech detected)
+                        notifyStatus('silence');
+                        return;
                     }
                     
                     // Notify 4D that we're processing
@@ -794,6 +805,11 @@
                 sum += dataArray[i];
             }
             const average = sum / dataArray.length;
+            
+            // Track maximum audio level during recording
+            if (average > maxAudioLevel) {
+                maxAudioLevel = average;
+            }
             
             const recordingDuration = Date.now() - recordingStartTime;
             
