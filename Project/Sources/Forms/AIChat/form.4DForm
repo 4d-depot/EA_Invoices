@@ -192,6 +192,23 @@
 					"sizingX": "move",
 					"sizingY": "move",
 					"tooltip": "Copy messages to clipboard"
+				},
+				"btnMicrophone": {
+					"type": "button",
+					"text": "🎤",
+					"top": 843,
+					"left": 691,
+					"width": 60,
+					"height": 36,
+					"events": [
+						"onClick"
+					],
+					"borderStyle": "none",
+					"method": "ObjectMethods/btnMicrophone.4dm",
+					"defaultButton": false,
+					"sizingX": "move",
+					"sizingY": "move",
+					"tooltip": "Voice input (speech to text)"
 				}
 			},
 			"entryOrder": [
@@ -199,7 +216,8 @@
 				"btnAskMe",
 				"btnNewChat",
 				"Web Area",
-				"btnCopy"
+				"btnCopy",
+				"btnMicrophone"
 			]
 		}
 	],

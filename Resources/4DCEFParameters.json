@@ -1,0 +1,7 @@
+{
+    "switches": {
+        "enable-media-stream": true,
+        "use-fake-ui-for-media-stream": false,
+        "autoplay-policy": "no-user-gesture-required"
+    }
+}
