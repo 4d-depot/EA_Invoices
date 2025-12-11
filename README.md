@@ -1,6 +1,14 @@
 # EA_Invoices
 
-A ready-to-use Invoice application. You can adapt it to suit your needs.
+Featuring: Subform, and Listbox
+
+This application provides a ready-to-use invoicing system that can be adapted to fit various business needs. Users can create, edit, and manage invoices with ease, thanks to a clear structure for customers, items, and invoice details. The implementation combines Subforms, and Listboxes to deliver an intuitive workflow.
+
+<p align="center">
+<img src="Resources/Images/invoices.png" alt="Invoices Application" width="45%">
+</p>
+
+Minimum requirement: 4D 20 LTS
 
 ## Installing and Using a 4D Project
 
