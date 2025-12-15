@@ -654,6 +654,89 @@
             initializeCharts();
         });
         
+        // ===== Text-to-Speech using OpenAI TTS API =====
+        let currentAudio = null;  // For OpenAI TTS audio playback
+        
+        // Play audio from base64 encoded data (OpenAI TTS)
+        function playAudioBase64(base64Audio, mimeType) {
+            // Stop any currently playing audio
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            
+            mimeType = mimeType || 'audio/mpeg';
+            
+            try {
+                // Decode base64 to binary
+                const binaryString = atob(base64Audio);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // Create blob and object URL
+                const audioBlob = new Blob([bytes], { type: mimeType });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                currentAudio = new Audio();
+                
+                currentAudio.oncanplaythrough = function() {
+                    console.log('OpenAI TTS audio ready to play');
+                    currentAudio.play().catch(function(e) {
+                        console.error('Play failed:', e);
+                        notifyTTSStatus('error');
+                    });
+                };
+                
+                currentAudio.onplay = function() {
+                    console.log('OpenAI TTS audio started');
+                    notifyTTSStatus('speaking');
+                };
+                
+                currentAudio.onended = function() {
+                    console.log('OpenAI TTS audio ended');
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                    notifyTTSStatus('ended');
+                };
+                
+                currentAudio.onerror = function(event) {
+                    console.error('OpenAI TTS audio error:', event);
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                    notifyTTSStatus('error');
+                };
+                
+                currentAudio.src = audioUrl;
+                currentAudio.load();
+                
+                return 'loading';
+            } catch (error) {
+                console.error('Failed to play audio:', error);
+                notifyTTSStatus('error');
+                return 'error';
+            }
+        }
+        
+        // Stop any playing audio
+        function stopSpeaking() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+                notifyTTSStatus('ended');
+                return 'stopped';
+            }
+            return 'not_speaking';
+        }
+        
+        function notifyTTSStatus(status) {
+            // Notify 4D of TTS status changes
+            setTimeout(function() {
+                window.location.href = 'myapp://ttsstatus?status=' + status;
+            }, 10);
+        }
+        
         // ===== Audio Recording for Whisper API =====
         let mediaRecorder = null;
         let audioChunks = [];

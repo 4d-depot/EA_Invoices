@@ -178,9 +178,9 @@
 				},
 				"btnCopy": {
 					"type": "button",
-					"text": "📋\r",
+					"text": "📋",
 					"top": 843,
-					"left": 758,
+					"left": 625,
 					"width": 60,
 					"height": 36,
 					"events": [
@@ -193,11 +193,28 @@
 					"sizingY": "move",
 					"tooltip": "Copy messages to clipboard"
 				},
-				"btnMicrophone": {
+				"btnTextToSpeech": {
 					"type": "button",
-					"text": "🎤",
+					"text": "🔇❌",
 					"top": 843,
 					"left": 691,
+					"width": 60,
+					"height": 36,
+					"events": [
+						"onClick"
+					],
+					"borderStyle": "none",
+					"method": "ObjectMethods/btnTextToSpeech.4dm",
+					"defaultButton": false,
+					"sizingX": "move",
+					"sizingY": "move",
+					"tooltip": "Text to speech (hear AI responses)"
+				},
+				"btnMicrophone": {
+					"type": "button",
+					"text": "🎙️",
+					"top": 843,
+					"left": 757,
 					"width": 60,
 					"height": 36,
 					"events": [
@@ -208,24 +225,21 @@
 					"defaultButton": false,
 					"sizingX": "move",
 					"sizingY": "move",
-					"tooltip": "Voice input (speech to text)"
+					"tooltip": "Voice conversation"
 				},
-				"chkVoiceConversation": {
+				"statusIndicator": {
 					"type": "button",
-					"text": "💬",
+					"text": "⏳ Generating...",
 					"top": 843,
 					"left": 625,
-					"width": 60,
+					"width": 328,
 					"height": 36,
-					"events": [
-						"onClick"
-					],
+					"events": [],
 					"borderStyle": "none",
-					"method": "ObjectMethods/chkVoiceConversation.4dm",
 					"defaultButton": false,
 					"sizingX": "move",
 					"sizingY": "move",
-					"tooltip": "Continuous voice conversation"
+					"visibility": "hidden"
 				}
 			},
 			"entryOrder": [
@@ -234,8 +248,9 @@
 				"btnNewChat",
 				"Web Area",
 				"btnCopy",
+				"btnTextToSpeech",
 				"btnMicrophone",
-				"chkVoiceConversation"
+				"statusIndicator"
 			]
 		}
 	],

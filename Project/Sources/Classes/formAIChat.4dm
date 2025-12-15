@@ -1,11 +1,17 @@
 property webAreaInitialized : Boolean
 property prompt : Text
 property voiceConversationMode : Boolean
+property textToSpeechMode : Boolean
+property isRecording : Boolean
+property voiceServices : Object
 
 Class constructor()
 	cs:C1710.AI_ChatWithTools.me.resetContext()
 	This:C1470.webAreaInitialized:=False:C215
 	This:C1470.voiceConversationMode:=False:C215
+	This:C1470.textToSpeechMode:=False:C215
+	This:C1470.isRecording:=False:C215
+	This:C1470.voiceServices:=cs:C1710.VoiceServices.new()
 	
 	//MARK: -
 	//MARK: Form & form objects event handlers
@@ -37,7 +43,8 @@ Function btnNewChatEventHandler($formEventCode : Integer)
 	//This.people:=Null
 	This:C1470.webAreaInitialized:=False:C215
 	This:C1470.voiceConversationMode:=False:C215
-	OBJECT SET TITLE:C194(*; "chkVoiceConversation"; "💬")
+	This:C1470.isRecording:=False:C215
+	OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
 	
 	var $templateFilename : Text
 	var $templatePath : Text
@@ -63,8 +70,31 @@ Function btnMicrophoneEventHandler($formEventCode : Integer)
 			// Initialize web area if not done yet
 			This:C1470.ensureWebAreaInitialized()
 			
-			// Toggle audio recording via JavaScript in the Web Area
-			WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "toggleAudioRecording"; $result)
+			// If already recording, stop it and disable voice conversation mode
+			If (This:C1470.isRecording)
+				WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "stopRecording"; $result)
+				This:C1470.voiceConversationMode:=False:C215
+			Else 
+				// Enable voice conversation mode and start recording
+				This:C1470.voiceConversationMode:=True:C214
+				This:C1470.textToSpeechMode:=True:C214  // Also enable TTS for full conversation
+				OBJECT SET TITLE:C194(*; "btnTextToSpeech"; "🔊")
+				WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "startRecording"; $result)
+			End if 
+	End case 
+	
+Function btnTextToSpeechEventHandler($formEventCode : Integer)
+	Case of 
+		: ($formEventCode=On Clicked:K2:4)
+			// Toggle the text-to-speech mode
+			This:C1470.textToSpeechMode:=Not:C34(This:C1470.textToSpeechMode)
+			
+			// Update button icon to reflect state
+			If (This:C1470.textToSpeechMode)
+				OBJECT SET TITLE:C194(*; "btnTextToSpeech"; "🔊")  // Active: loud speaker with waves
+			Else 
+				OBJECT SET TITLE:C194(*; "btnTextToSpeech"; "🔇❌")  // Inactive: muted speaker + red X
+			End if 
 	End case 
 	
 Function startVoiceRecording()
@@ -106,7 +136,10 @@ Function inputEventHandler($formEventCode : Integer)
 	
 Function submitPrompt($prompt : Text)
 	If (($prompt#Null:C1517) & ($prompt#""))
+		// Hide toolbar and show status indicator
 		OBJECT SET VISIBLE:C603(*; "btn@"; False:C215)
+		OBJECT SET VISIBLE:C603(*; "statusIndicator"; True:C214)
+		OBJECT SET TITLE:C194(*; "statusIndicator"; "⏳ Generating response...")
 		cs:C1710.AI_ChatWithTools.me.askMe($prompt; This:C1470)
 		Form:C1466.prompt:=""
 	End if 
@@ -203,6 +236,10 @@ Function webAreaEventHandler($formEventCode : Integer)
 				: ($url="myapp://speechstatus?@")
 					// Handle speech recognition status updates
 					This:C1470.handleSpeechStatus($url)
+					
+				: ($url="myapp://ttsstatus?@")
+					// Handle text-to-speech status updates
+					This:C1470.handleTTSStatus($url)
 			End case 
 	End case 
 	
@@ -214,9 +251,30 @@ Function terminateChat()
 	If (Current form name:C1298="menu")
 		EXECUTE METHOD IN SUBFORM:C1085("Subform"; Formula:C1597(Form:C1466.terminateChat($1; $2)); *; $timing; $peopleFound)
 	Else 
-		OBJECT SET VISIBLE:C603(*; "btn@"; True:C214)
+		// If text-to-speech mode is enabled, speak the last assistant message
+		If (This:C1470.textToSpeechMode)
+			var $messages : Collection
+			$messages:=cs:C1710.AI_ChatWithTools.me.messages()
+			If ($messages#Null:C1517) & ($messages.length>0)
+				var $lastMessage : Object
+				$lastMessage:=$messages[$messages.length-1]
+				If ($lastMessage.role="assistant") & ($lastMessage.content#Null:C1517) & ($lastMessage.content#"")
+					// Update status to show TTS is converting
+					OBJECT SET TITLE:C194(*; "statusIndicator"; "🔄 Converting to speech...")
+					// Delay to let UI refresh before blocking TTS call
+					DELAY PROCESS:C323(Current process:C322; 15)
+					This:C1470.speakText($lastMessage.content)
+					// Note: if voice conversation mode is also enabled, recording will start 
+					// when TTS ends (handled in handleTTSStatus)
+					return 
+				End if 
+			End if 
+		End if 
 		
-		// If voice conversation mode is enabled, restart recording
+		// No TTS - show toolbar immediately
+		This:C1470.showToolbar()
+		
+		// If voice conversation mode is enabled (and TTS not speaking), restart recording
 		If (This:C1470.voiceConversationMode)
 			This:C1470.startVoiceRecording()
 		End if 
@@ -249,13 +307,13 @@ Function handleAudioData($url : Text)
 	$base64Data:=Split string:C1554($url; "data=")[1]
 	
 	If ($base64Data#"")
-		// Transcribe using Whisper API
-		$result:=This:C1470.transcribeWithWhisper($base64Data)
+		// Transcribe using VoiceServices
+		$result:=This:C1470.voiceServices.transcribe($base64Data)
 		
 		If ($result.error#"")
 			// Show error to user and disable voice conversation mode
 			This:C1470.voiceConversationMode:=False:C215
-			OBJECT SET TITLE:C194(*; "chkVoiceConversation"; "💬")
+			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
 			ALERT:C41($result.error)
 		Else 
 			If ($result.transcript#"")
@@ -272,93 +330,7 @@ Function handleAudioData($url : Text)
 	End if 
 	
 	// Reset button state using CALL FORM to ensure UI update happens
-	CALL FORM:C1391(Current form window:C827; Formula:C1597(OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎤")))
-	
-Function transcribeWithWhisper($base64Audio : Text) : Object
-	var $apiKey : Text
-	var $audioBlob : Blob
-	var $response : Object
-	var $result : Object
-	var $request : 4D:C1709.HTTPRequest
-	var $options : Object
-	var $boundary : Text
-	var $body : Blob
-	var $configFile : 4D:C1709.File
-	var $config : Object
-	
-	// Initialize result object
-	$result:={transcript: ""; error: ""}
-	
-	// Get API key from AIprovider.json
-	$configFile:=File:C1566("/RESOURCES/AIprovider.json")
-	If ($configFile.exists)
-		$config:=JSON Parse:C1218($configFile.getText())
-		$apiKey:=$config.reasoning.key
-	End if 
-	
-	If ($apiKey="")
-		$result.error:="Voice transcription is not available. OpenAI API key not configured."
-		return $result
-	End if 
-	
-	// Decode base64 to blob
-	BASE64 DECODE:C896($base64Audio; $audioBlob)
-	
-	// Build multipart form data
-	$boundary:="----4DBoundary"+String:C10(Random:C100)
-	
-	var $bodyText : Text
-	$bodyText:="--"+$boundary+"\r\n"
-	$bodyText+="Content-Disposition: form-data; name=\"file\"; filename=\"audio.webm\"\r\n"
-	$bodyText+="Content-Type: audio/webm\r\n\r\n"
-	
-	var $headerBlob; $footerBlob : Blob
-	CONVERT FROM TEXT:C1011($bodyText; "UTF-8"; $headerBlob)
-	
-	var $footerText : Text
-	$footerText:="\r\n--"+$boundary+"\r\n"
-	$footerText+="Content-Disposition: form-data; name=\"model\"\r\n\r\n"
-	$footerText+="whisper-1\r\n"
-	$footerText+="--"+$boundary+"--\r\n"
-	CONVERT FROM TEXT:C1011($footerText; "UTF-8"; $footerBlob)
-	
-	// Combine blobs
-	COPY BLOB:C558($headerBlob; $body; 0; 0; BLOB size:C605($headerBlob))
-	COPY BLOB:C558($audioBlob; $body; 0; BLOB size:C605($body); BLOB size:C605($audioBlob))
-	COPY BLOB:C558($footerBlob; $body; 0; BLOB size:C605($body); BLOB size:C605($footerBlob))
-	
-	// Make HTTP request to Whisper API
-	$options:=New object:C1471
-	$options.method:="POST"
-	$options.headers:=New object:C1471
-	$options.headers["Authorization"]:="Bearer "+$apiKey
-	$options.headers["Content-Type"]:="multipart/form-data; boundary="+$boundary
-	$options.body:=$body
-	$options.timeout:=60
-	
-	$request:=4D:C1709.HTTPRequest.new("https://api.openai.com/v1/audio/transcriptions"; $options)
-	$request.wait()
-	
-	If ($request.response.status=200)
-		$response:=$request.response.body
-		If (Value type:C1509($response)=Is object:K8:27)
-			$result.transcript:=String:C10($response.text)
-		End if 
-	Else 
-		// Handle API errors
-		Case of 
-			: ($request.response.status=401)
-				$result.error:="Voice transcription failed: Invalid API key."
-			: ($request.response.status=429)
-				$result.error:="Voice transcription failed: Rate limit exceeded. Please try again later."
-			: ($request.response.status=500) | ($request.response.status=503)
-				$result.error:="Voice transcription failed: OpenAI service temporarily unavailable."
-			Else 
-				$result.error:="Voice transcription failed (Error "+String:C10($request.response.status)+"). Please check your OpenAI API configuration."
-		End case 
-	End if 
-	
-	return $result
+	CALL FORM:C1391(Current form window:C827; Formula:C1597(OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")))
 	
 Function handleSpeechStatus($url : Text)
 	var $status : Text
@@ -368,19 +340,117 @@ Function handleSpeechStatus($url : Text)
 	
 	Case of 
 		: ($status="recording")
+			This:C1470.isRecording:=True:C214
 			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🔴")
 		: ($status="processing")
+			This:C1470.isRecording:=False:C215
 			OBJECT SET TITLE:C194(*; "btnMicrophone"; "⏳")
 		: ($status="stopped")
-			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎤")
+			This:C1470.isRecording:=False:C215
+			// Show microphone icon only if voice conversation mode is off
+			If (This:C1470.voiceConversationMode)
+				OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
+			Else 
+				OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
+			End if 
 		: ($status="silence")
 			// Recording contained no speech - disable voice conversation mode
-			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎤")
+			This:C1470.isRecording:=False:C215
 			This:C1470.voiceConversationMode:=False:C215
-			OBJECT SET TITLE:C194(*; "chkVoiceConversation"; "💬")
+			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
 		: ($status="error")
-			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎤")
+			This:C1470.isRecording:=False:C215
+			This:C1470.voiceConversationMode:=False:C215
+			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
 			ALERT:C41("Microphone access denied. Please allow microphone access in System Settings.")
 	End case 
 	
+
+	//MARK: -
+	//MARK: Text-to-Speech functions (using OpenAI TTS API)
+
+Function speakText($text : Text)
+	// Speak text using VoiceServices TTS
+	var $cleanText : Text
+	var $audioBlob : Blob
+	var $base64Audio : Text
+	var $result : Text
+	var $ttsOptions : Object
+	
+	This:C1470.ensureWebAreaInitialized()
+	
+	// Clean the text - remove markdown formatting for better speech
+	$cleanText:=This:C1470.voiceServices.cleanTextForSpeech($text)
+	
+	// Skip if there's nothing to speak
+	If (Length:C16($cleanText)<10)
+		// Nothing to speak - show toolbar and start recording if needed
+		This:C1470.showToolbar()
+		If (This:C1470.voiceConversationMode)
+			This:C1470.startVoiceRecording()
+		End if 
+		return 
+	End if 
+	
+	// Limit text length (OpenAI TTS has a 4096 character limit)
+	If (Length:C16($cleanText)>4000)
+		$cleanText:=Substring:C12($cleanText; 1; 4000)
+	End if 
+	
+	// Configure TTS options
+	// Available models: "tts-1" (fast) or "tts-1-hd" (higher quality)
+	// Available voices: alloy, echo, fable, onyx, nova, shimmer
+	// Speed: 0.25 to 4.0 (default 1.0)
+	$ttsOptions:={model: "gpt-4o-mini-tts"; voice: "nova"; speed: 1; response_format: "opus"}
+	
+	// Call VoiceServices TTS API
+	$audioBlob:=This:C1470.voiceServices.generateSpeech($cleanText; $ttsOptions)
+	
+	If (BLOB size:C605($audioBlob)>0)
+		// Update status to show TTS is speaking
+		OBJECT SET TITLE:C194(*; "statusIndicator"; "🔊 Speaking...")
+		// Convert audio blob to base64 and play via JavaScript
+		BASE64 ENCODE:C895($audioBlob; $base64Audio)
+		// Remove line breaks from base64 encoding for JavaScript compatibility
+		$base64Audio:=Replace string:C233(Replace string:C233($base64Audio; "\r"; ""); "\n"; "")
+		WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "playAudioBase64"; $result; $base64Audio; This:C1470.voiceServices.getMimeTypeForFormat($ttsOptions.response_format))
+	Else 
+		// Audio generation failed - show toolbar and start recording if needed
+		This:C1470.showToolbar()
+		If (This:C1470.voiceConversationMode)
+			This:C1470.startVoiceRecording()
+		End if 
+	End if 
+
+Function handleTTSStatus($url : Text)
+	var $status : Text
+	
+	// Extract status from URL: myapp://ttsstatus?status=speaking|ended|error
+	$status:=Split string:C1554(Split string:C1554($url; "status=")[1]; "&")[0]
+	
+	Case of 
+		: ($status="speaking")
+			// TTS is speaking - update status
+			OBJECT SET TITLE:C194(*; "statusIndicator"; "🔊 Speaking...")
+			
+		: ($status="ended")
+			// TTS finished - show toolbar
+			This:C1470.showToolbar()
+			// If voice conversation mode is enabled, start recording
+			If (This:C1470.voiceConversationMode)
+				This:C1470.startVoiceRecording()
+			End if 
+			
+		: ($status="error")
+			// TTS error - show toolbar and start recording if needed
+			This:C1470.showToolbar()
+			If (This:C1470.voiceConversationMode)
+				This:C1470.startVoiceRecording()
+			End if 
+	End case 
+
+Function showToolbar()
+	// Hide status indicator and show normal toolbar buttons
+	OBJECT SET VISIBLE:C603(*; "statusIndicator"; False:C215)
+	OBJECT SET VISIBLE:C603(*; "btn@"; True:C214)
 	

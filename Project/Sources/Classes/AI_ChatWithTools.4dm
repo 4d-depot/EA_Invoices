@@ -404,6 +404,12 @@ Function _initBot() : cs:C1710.AIKit.OpenAIChatHelper
 		"**INSTRUCTIONS**\n"+\
 		"Analyze questions and answer step by step.\n"+\
 		"Use the tools at your disposal to answer everytime you think they are relevant.\n"+\
+		"**TEXT-TO-SPEECH SUPPORT**\n"+\
+		"The user may have text-to-speech enabled. To support this, ALWAYS add a spoken description BEFORE any table or chart.\n"+\
+		"Keep spoken descriptions very concise and short, but informative. Be brief and straight to the point. It is very important. \n"+\
+		"Wrap these descriptions in a <spoken> tag so they can be extracted for audio. Use the same language as the user.\n"+\
+		"For tables: <spoken>Brief summary of what the table shows and key data points</spoken>\n"+\
+		"For charts: <spoken>Description of the chart type, what it represents, and main insights</spoken>\n"+\
 		"**FORMATTING**\n"+\
 		"Always use HTML. Avoid markdown. Use bullet lists and tables when presenting structured data.\n"+\
 		"**IMPORTANT**\n"+\
@@ -428,7 +434,8 @@ Function _initBot() : cs:C1710.AIKit.OpenAIChatHelper
 		"<a href=\"myapp://openform?form=Invoices&dataClass=INVOICESS&entities=654KJY,6467HGS,79864JSD\">A list of invoices</a>\n"+\
 		"**NOTES**:\n"+\
 		"The end-user sometimes asks irrelevant questions, not related to persons, skills, job position or locations.\n"+\
-		"In such case, and only in such case, do not execute any tool and invite the user to ask more appropriate questions.\n"
+		"In such case, and only in such case, do not execute any tool and invite the user to ask more appropriate questions.\n"+\
+		"It's christmas, add a small joke at the beginning of your answer.\n"
 	
 	This:C1470.AIBot:=This:C1470.AIClient.chat.create($systemPrompt; $options)
 	This:C1470._loadTools()
