@@ -231,8 +231,8 @@ Function tool_getInvoices($input : Object) : Object
 	$input.Total.min:=$input.Total.min || 0
 	$input.Total.max:=$input.Total.max || 9999999
 	$input.Creation_Date:=$input.Creation_Date || {}
-	$input.Creation_Date.min:=($input.Creation_Date.min) ? Date:C102($input.Creation_Date.min) : Date:C102("2000-01-01")  // date YYYY-MM-DD
-	$input.Creation_Date.max:=($input.Creation_Date.max) ? Date:C102($input.Creation_Date.max) : Date:C102("2350-12-31")  // date YYYY-MM-DD
+	$input.Creation_Date.min:=($input.Creation_Date.min) ? Date:C102($input.Creation_Date.min) : Date:C102("2000-01-01T00:00:00")  // date YYYY-MM-DD
+	$input.Creation_Date.max:=($input.Creation_Date.max) ? Date:C102($input.Creation_Date.max) : Date:C102("2350-12-31T00:00:00")  // date YYYY-MM-DD
 	$input.orderBy:=($input.orderBy) || {}
 	$input.orderBy.field:=($input.orderBy.field) || "Total"
 	$input.orderBy.order:=($input.orderBy.order) || "desc"
