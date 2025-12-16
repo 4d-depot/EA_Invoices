@@ -756,12 +756,23 @@
             return 'initialized';
         }
         
-        // Convert bytes to Float32 samples
+        // Convert bytes to Float32 samples (PCM 16-bit little-endian)
         function bytesToSamples(bytes) {
-            const samples = new Float32Array(bytes.length / 2);
-            const dataView = new DataView(bytes.buffer);
+            // Ensure we have an even number of bytes (16-bit samples = 2 bytes each)
+            // Truncate odd byte to avoid corruption
+            const byteCount = bytes.length - (bytes.length % 2);
+            if (byteCount === 0) {
+                return new Float32Array(0);
+            }
+            
+            const samples = new Float32Array(byteCount / 2);
+            
+            // Use DataView on the actual buffer with correct offset
+            // bytes might be a view into a larger buffer, so we need byteOffset
+            const dataView = new DataView(bytes.buffer, bytes.byteOffset, byteCount);
+            
             for (let i = 0; i < samples.length; i++) {
-                const int16 = dataView.getInt16(i * 2, true);
+                const int16 = dataView.getInt16(i * 2, true);  // true = little-endian
                 samples[i] = int16 / 32768.0;
             }
             return samples;
