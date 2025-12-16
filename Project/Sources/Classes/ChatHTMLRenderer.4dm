@@ -288,6 +288,10 @@ Function _processRegularContent($content : Text; $messageIndex : Integer) : Text
 	// Convert literal \n to actual line breaks using centralized function
 	$processedContent:=This:C1470._normalizeLineBreaks($processedContent)
 	
+	// Remove <spoken> tags (these are for TTS only, not display)
+	$processedContent:=Replace string:C233($processedContent; "<spoken>"; ""; *)
+	$processedContent:=Replace string:C233($processedContent; "</spoken>"; ""; *)
+	
 	// Process <think> sections BEFORE any other processing
 	If (Position:C15("<think>"; $processedContent)>0)
 		$processedContent:=This:C1470._processThinkSections($processedContent)

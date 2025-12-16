@@ -4,6 +4,11 @@ property voiceConversationMode : Boolean
 property textToSpeechMode : Boolean
 property isRecording : Boolean
 property voiceServices : Object
+// Pipelined TTS properties
+property ttsStreamingActive : Boolean  // True when we're doing incremental TTS during text streaming
+property ttsSpokenText : Text  // Text that has already been sent to TTS
+property ttsLastContent : Text  // Last full content seen (to detect new text)
+property ttsPendingRequests : Integer  // Number of TTS requests in flight
 
 Class constructor()
 	cs:C1710.AI_ChatWithTools.me.resetContext()
@@ -12,6 +17,7 @@ Class constructor()
 	This:C1470.textToSpeechMode:=False:C215
 	This:C1470.isRecording:=False:C215
 	This:C1470.voiceServices:=cs:C1710.VoiceServices.new()
+	This:C1470._resetTTSStreamingState()
 	
 	//MARK: -
 	//MARK: Form & form objects event handlers
@@ -44,6 +50,7 @@ Function btnNewChatEventHandler($formEventCode : Integer)
 	This:C1470.webAreaInitialized:=False:C215
 	This:C1470.voiceConversationMode:=False:C215
 	This:C1470.isRecording:=False:C215
+	This:C1470._resetTTSStreamingState()
 	OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
 	
 	var $templateFilename : Text
@@ -251,7 +258,7 @@ Function terminateChat()
 	If (Current form name:C1298="menu")
 		EXECUTE METHOD IN SUBFORM:C1085("Subform"; Formula:C1597(Form:C1466.terminateChat($1; $2)); *; $timing; $peopleFound)
 	Else 
-		// If text-to-speech mode is enabled, speak the last assistant message
+		// If text-to-speech mode is enabled, handle TTS
 		If (This:C1470.textToSpeechMode)
 			var $messages : Collection
 			$messages:=cs:C1710.AI_ChatWithTools.me.messages()
@@ -259,14 +266,18 @@ Function terminateChat()
 				var $lastMessage : Object
 				$lastMessage:=$messages[$messages.length-1]
 				If ($lastMessage.role="assistant") & ($lastMessage.content#Null:C1517) & ($lastMessage.content#"")
-					// Update status to show TTS is converting
-					OBJECT SET TITLE:C194(*; "statusIndicator"; "🔄 Converting to speech...")
-					// Delay to let UI refresh before blocking TTS call
-					DELAY PROCESS:C323(Current process:C322; 15)
-					This:C1470.speakText($lastMessage.content)
-					// Note: if voice conversation mode is also enabled, recording will start 
-					// when TTS ends (handled in handleTTSStatus)
-					return 
+					// If we were doing pipelined TTS, speak any remaining text
+					If (This:C1470.ttsStreamingActive)
+						This:C1470._finishStreamingTTS($lastMessage.content)
+						// Note: voice recording will start when all TTS finishes (handled in handleTTSStatus)
+						return 
+					Else 
+						// Non-pipelined: speak the full message (fallback)
+						OBJECT SET TITLE:C194(*; "statusIndicator"; "🔄 Converting to speech...")
+						DELAY PROCESS:C323(Current process:C322; 15)
+						This:C1470.speakText($lastMessage.content)
+						return 
+					End if 
 				End if 
 			End if 
 		End if 
@@ -291,6 +302,11 @@ Function progressChat($input : Object)
 			
 			// Update content via JavaScript without page reload
 			cs:C1710.ChatHTMLRenderer.me.updateWebAreaWithJS("Web Area"; $input.messages)
+			
+			// Pipelined TTS: speak text incrementally as it streams
+			If (This:C1470.textToSpeechMode)
+				This:C1470._processStreamingTTS($input.messages)
+			End if 
 		End if 
 		
 	End if 
@@ -445,3 +461,326 @@ Function showToolbar()
 	OBJECT SET VISIBLE:C603(*; "statusIndicator"; False:C215)
 	OBJECT SET VISIBLE:C603(*; "btn@"; True:C214)
 	
+	//MARK: -
+	//MARK: Pipelined TTS functions (speak while text is still streaming)
+
+Function _resetTTSStreamingState()
+	// Reset all pipelined TTS state
+	This:C1470.ttsStreamingActive:=False:C215
+	This:C1470.ttsSpokenText:=""
+	This:C1470.ttsLastContent:=""
+	This:C1470.ttsPendingRequests:=0
+
+Function _processStreamingTTS($messages : Collection)
+	// Process streaming text and send complete sentences to TTS
+	// Called from progressChat as text streams in
+	
+	var $lastMessage : Object
+	var $content : Text
+	var $newText : Text
+	var $speakableText : Text
+	
+	If ($messages=Null:C1517) | ($messages.length=0)
+		return 
+	End if 
+	
+	// Get the last assistant message
+	$lastMessage:=$messages[$messages.length-1]
+	If ($lastMessage.role#"assistant") | ($lastMessage.content=Null:C1517)
+		return 
+	End if 
+	
+	$content:=String:C10($lastMessage.content)
+	
+	// Check if content has changed
+	If ($content=This:C1470.ttsLastContent)
+		return 
+	End if 
+	This:C1470.ttsLastContent:=$content
+	
+	// Extract speakable content from <spoken> tags
+	// We process PARTIAL spoken content for streaming - don't wait for closing tag
+	var $cleanContent : Text
+	var $spokenStart : Integer
+	var $spokenEnd : Integer
+	var $partialSpoken : Text
+	
+	$cleanContent:=""
+	$partialSpoken:=""
+	
+	// Find all complete <spoken>...</spoken> blocks
+	var $workText : Text
+	$workText:=$content
+	
+	While (Position:C15("<spoken>"; $workText)>0)
+		$spokenStart:=Position:C15("<spoken>"; $workText)
+		$spokenEnd:=Position:C15("</spoken>"; $workText)
+		
+		If ($spokenEnd>$spokenStart)
+			// Complete block - extract it
+			$cleanContent:=$cleanContent+Substring:C12($workText; $spokenStart+8; $spokenEnd-$spokenStart-8)+" "
+			$workText:=Substring:C12($workText; $spokenEnd+9)
+		Else 
+			// Unclosed <spoken> tag - extract partial content for streaming
+			$partialSpoken:=Substring:C12($workText; $spokenStart+8)
+			$workText:=""  // Exit loop
+		End if 
+	End while 
+	
+	// Add partial spoken content (up to last complete sentence)
+	If (Length:C16($partialSpoken)>0)
+		// Extract only complete sentences from partial content
+		var $partialSentences : Text
+		$partialSentences:=This:C1470._extractCompleteSentences($partialSpoken)
+		If (Length:C16($partialSentences)>0)
+			$cleanContent:=$cleanContent+$partialSentences
+		End if 
+	End if 
+	
+	// Trim the result
+	$cleanContent:=Trim:C1853($cleanContent)
+	
+	// Skip if no speakable content yet
+	If (Length:C16($cleanContent)<10)
+		return 
+	End if 
+	
+	// Calculate new text based on length already spoken, not string matching
+	// This avoids issues when cleanContent changes due to HTML processing
+	var $spokenLength : Integer
+	$spokenLength:=Length:C16(This:C1470.ttsSpokenText)
+	
+	If ($spokenLength>0)
+		// Only take text after what we've already spoken
+		If (Length:C16($cleanContent)>$spokenLength)
+			$newText:=Substring:C12($cleanContent; $spokenLength+1)
+		Else 
+			// Content is shorter than or equal to what we've spoken - no new text
+			return 
+		End if 
+	Else 
+		$newText:=$cleanContent
+	End if 
+	
+	// Extract complete sentences from new text
+	$speakableText:=This:C1470._extractCompleteSentences($newText)
+	
+	If (Length:C16($speakableText)>0)
+		// Decide if we should start speaking
+		var $shouldSpeak : Boolean
+		$shouldSpeak:=False:C215
+		
+		If (Not:C34(This:C1470.ttsStreamingActive))
+			// First time: start speaking with just 1 complete sentence or 50 chars
+			var $sentenceCount : Integer
+			$sentenceCount:=This:C1470._countSentences($speakableText)
+			If (($sentenceCount>=1) | (Length:C16($speakableText)>50))
+				$shouldSpeak:=True:C214
+				This:C1470.ttsStreamingActive:=True:C214
+				This:C1470._initTTSQueue()
+			End if 
+		Else 
+			// Already streaming: speak any complete sentence
+			$shouldSpeak:=True:C214
+		End if 
+		
+		If ($shouldSpeak)
+			// Update spoken text tracker by length
+			This:C1470.ttsSpokenText:=This:C1470.ttsSpokenText+$speakableText
+			// Queue this text for TTS
+			This:C1470._queueTTSText($speakableText)
+		End if 
+	End if 
+
+Function _finishStreamingTTS($fullContent : Text)
+	// Called at end of streaming to speak any remaining text
+	
+	var $cleanContent : Text
+	var $remainingText : Text
+	var $spokenLength : Integer
+	
+	$cleanContent:=This:C1470.voiceServices.cleanTextForSpeech($fullContent)
+	
+	// Get any text not yet spoken (use length-based tracking to match _processStreamingTTS)
+	$spokenLength:=Length:C16(This:C1470.ttsSpokenText)
+	
+	If ($spokenLength>0)
+		If (Length:C16($cleanContent)>$spokenLength)
+			$remainingText:=Substring:C12($cleanContent; $spokenLength+1)
+		Else 
+			// All text already spoken
+			$remainingText:=""
+		End if 
+	Else 
+		$remainingText:=$cleanContent
+	End if 
+	
+	// Trim whitespace
+	$remainingText:=Trim:C1853($remainingText)
+	
+	If (Length:C16($remainingText)>0)
+		If (Not:C34(This:C1470.ttsStreamingActive))
+			// Never started streaming, speak full content
+			This:C1470.ttsStreamingActive:=True:C214
+			This:C1470._initTTSQueue()
+			This:C1470._queueTTSText($cleanContent)
+		Else 
+			// Queue remaining text
+			This:C1470._queueTTSText($remainingText)
+		End if 
+	End if 
+	
+	// Signal end of text stream to JavaScript
+	This:C1470._finalizeTTSQueue()
+	
+	// Reset state for next conversation turn
+	This:C1470._resetTTSStreamingState()
+
+Function _extractCompleteSentences($text : Text) : Text
+	// Extract complete sentences (ending with . ! ? or newline) from text
+	// Returns the complete sentences, leaves partial sentence for later
+	// Avoids splitting on abbreviations like "e.g.", "i.e.", etc.
+	
+	var $result : Text
+	var $lastSentenceEnd : Integer
+	var $i : Integer
+	var $char : Text
+	var $prevChar : Text
+	var $nextChar : Text
+	var $len : Integer
+	
+	$result:=""
+	$lastSentenceEnd:=0
+	$len:=Length:C16($text)
+	
+	For ($i; 1; $len)
+		$char:=Substring:C12($text; $i; 1)
+		
+		// Check for sentence endings
+		If (($char="!") | ($char="?") | ($char="\n") | ($char="\r"))
+			// These are always sentence endings
+			// Include trailing spaces after punctuation
+			While (($i<$len) & (Substring:C12($text; $i+1; 1)=" "))
+				$i:=$i+1
+			End while 
+			$lastSentenceEnd:=$i
+			
+		Else 
+			If ($char=".")
+				// Period - check if it's likely a sentence end or an abbreviation
+				// Get surrounding characters
+				$prevChar:=""
+				$nextChar:=""
+				If ($i>1)
+					$prevChar:=Substring:C12($text; $i-1; 1)
+				End if 
+				If ($i<$len)
+					$nextChar:=Substring:C12($text; $i+1; 1)
+				End if 
+				
+				// Skip if this looks like an abbreviation:
+				// - Single letter before period (e.g., "e.", "i.")
+				// - Period followed by lowercase letter (e.g., "e.g")
+				var $isAbbreviation : Boolean
+				$isAbbreviation:=False:C215
+				
+				// Single letter abbreviation (like "e." in "e.g.")
+				If (($i>=2) & (($i=2) | (Substring:C12($text; $i-2; 1)=" ") | (Substring:C12($text; $i-2; 1)=".")))
+					If (($prevChar>="a") & ($prevChar<="z")) | (($prevChar>="A") & ($prevChar<="Z"))
+						$isAbbreviation:=True:C214
+					End if 
+				End if 
+				
+				// Period followed by lowercase (continuation of abbreviation)
+				If (($nextChar>="a") & ($nextChar<="z"))
+					$isAbbreviation:=True:C214
+				End if 
+				
+				If (Not:C34($isAbbreviation))
+					// Include trailing spaces after punctuation
+					While (($i<$len) & (Substring:C12($text; $i+1; 1)=" "))
+						$i:=$i+1
+					End while 
+					$lastSentenceEnd:=$i
+				End if 
+			End if 
+		End if 
+	End for 
+	
+	// Only return if we have a meaningful amount of text (at least 10 chars)
+	If (($lastSentenceEnd>0) & ($lastSentenceEnd>=10))
+		$result:=Substring:C12($text; 1; $lastSentenceEnd)
+	End if 
+	
+	return $result
+
+Function _countSentences($text : Text) : Integer
+	// Count the number of sentences in text
+	var $count : Integer
+	var $i : Integer
+	var $char : Text
+	
+	$count:=0
+	For ($i; 1; Length:C16($text))
+		$char:=Substring:C12($text; $i; 1)
+		If (($char=".") | ($char="!") | ($char="?"))
+			$count:=$count+1
+		End if 
+	End for 
+	
+	return $count
+
+Function _initTTSQueue()
+	// Initialize the JavaScript TTS queue for pipelined playback
+	var $result : Text
+	This:C1470.ensureWebAreaInitialized()
+	This:C1470.ttsPendingRequests:=0
+	OBJECT SET TITLE:C194(*; "statusIndicator"; "🔊 Speaking...")
+	WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "initTTSQueue"; $result)
+
+Function _queueTTSText($text : Text)
+	// Queue text for TTS - will be converted to speech and played in order
+	var $cleanText : Text
+	var $ttsOptions : Object
+	var $formWindow : Integer
+	var $requestId : Integer
+	var $result : Text
+	
+	$cleanText:=Trim:C1853($text)
+	
+	If (Length:C16($cleanText)<5)
+		return  // Skip very short text
+	End if 
+	
+	// Skip text that looks like HTML attributes (safety net)
+	If ((Position:C15("=\""; $cleanText)>0) | (Position:C15("href="; $cleanText)>0) | (Position:C15("border="; $cleanText)>0) | (Position:C15("cellpadding"; $cleanText)>0) | (Position:C15("cellspacing"; $cleanText)>0))
+		return 
+	End if
+	
+	// Limit individual chunk length
+	If (Length:C16($cleanText)>4000)
+		$cleanText:=Substring:C12($cleanText; 1; 4000)
+	End if 
+	
+	// Configure TTS options
+	$ttsOptions:={model: "gpt-4o-mini-tts"; voice: "nova"; speed: 1; response_format: "pcm"}
+	
+	$formWindow:=Current form window:C827
+	
+	// Get a unique request ID and register it with JavaScript
+	This:C1470.ttsPendingRequests:=This:C1470.ttsPendingRequests+1
+	$requestId:=This:C1470.ttsPendingRequests
+	
+	// Tell JavaScript to expect this request ID
+	WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "registerTTSRequest"; $result; $requestId)
+	
+	// Start streaming TTS for this chunk, passing the request ID
+	This:C1470.voiceServices.generateSpeechStreamingWithId($cleanText; $ttsOptions; $requestId; \
+		Formula:C1597(OB_AudioChunkQueued($1; $2; $3; $4)); \
+		Formula:C1597(OB_AudioCompleteQueued($1; $2; $3; $4)); \
+		$formWindow)
+
+Function _finalizeTTSQueue()
+	// Signal to JavaScript that no more TTS requests are coming
+	var $result : Text
+	WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "finalizeTTSQueue"; $result)

@@ -282,6 +282,10 @@
         // Function to clean up incomplete tags and fix unclosed tags
         function cleanupHTML(html) {
             try {
+                // Remove <spoken> tags but keep their content (these are for TTS only, not display)
+                html = html.replace(/<spoken>/gi, '');
+                html = html.replace(/<\/spoken>/gi, '');
+                
                 // Remove incomplete opening tags like <html, <div, etc (tag name not complete or no closing >)
                 // Match < followed by optional letters/hyphens but NOT followed by > before end of string
                 html = html.replace(/<[a-zA-Z][a-zA-Z0-9\-]*(?![^<]*>)[^<]*$/g, '');
@@ -648,7 +652,6 @@
         
         // Initialize smooth scrolling and link tooltips
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Chat interface ready');
             initLinkTooltips();
             initializeThinkingBubbles();
             initializeCharts();
@@ -682,7 +685,6 @@
                 currentAudio = new Audio();
                 
                 currentAudio.oncanplaythrough = function() {
-                    console.log('OpenAI TTS audio ready to play');
                     currentAudio.play().catch(function(e) {
                         console.error('Play failed:', e);
                         notifyTTSStatus('error');
@@ -690,12 +692,10 @@
                 };
                 
                 currentAudio.onplay = function() {
-                    console.log('OpenAI TTS audio started');
                     notifyTTSStatus('speaking');
                 };
                 
                 currentAudio.onended = function() {
-                    console.log('OpenAI TTS audio ended');
                     URL.revokeObjectURL(audioUrl);
                     currentAudio = null;
                     notifyTTSStatus('ended');
@@ -752,7 +752,6 @@
             totalSamplesScheduled = 0;
             chunkCount = 0;
             streamStartTime = null;  // Will be set when we start playing
-            console.log('Audio stream initialized, buffering...');
             notifyTTSStatus('speaking');
             return 'initialized';
         }
@@ -795,7 +794,6 @@
             source.connect(audioContext.destination);
             
             const startTime = streamStartTime + (totalSamplesScheduled / PCM_SAMPLE_RATE);
-            console.log('Scheduling ' + samples.length + ' samples at ' + startTime.toFixed(3) + 's, total scheduled: ' + totalSamplesScheduled);
             source.start(startTime);
             
             streamingSourceNodes.push(source);
@@ -805,7 +803,6 @@
         // Add a chunk of PCM audio data (base64 encoded, 16-bit signed LE, 24kHz mono)
         function addAudioChunk(base64Chunk) {
             if (!audioContext || !isStreamPlaying) {
-                console.log('addAudioChunk: not playing, audioContext=' + !!audioContext + ' isStreamPlaying=' + isStreamPlaying);
                 return 'not_initialized';
             }
             
@@ -831,11 +828,9 @@
                     // Accumulate chunks in buffer
                     pendingChunks.push(samples);
                     pendingSamplesCount += samples.length;
-                    console.log('Buffering: ' + pendingSamplesCount + ' samples');
                     
                     // Check if we have enough to start playing
                     if (pendingSamplesCount >= bufferThreshold) {
-                        console.log('Buffer ready, starting playback');
                         isBuffering = false;
                         streamStartTime = audioContext.currentTime + 0.05;
                         
@@ -847,7 +842,6 @@
                     }
                 } else {
                     // Stream directly - schedule immediately
-                    console.log('Streaming chunk: ' + samples.length + ' samples');
                     scheduleAudioBatch(samples);
                 }
                 
@@ -866,7 +860,6 @@
             
             // If we were still buffering, play whatever we have
             if (isBuffering && pendingChunks.length > 0) {
-                console.log('End of stream, playing remaining buffer: ' + pendingSamplesCount + ' samples');
                 isBuffering = false;
                 streamStartTime = audioContext.currentTime + 0.05;
                 const bufferedSamples = concatFloat32Arrays(pendingChunks);
@@ -931,6 +924,11 @@
         
         // Stop any playing audio
         function stopSpeaking() {
+            // Stop TTS queue if active
+            if (ttsQueueActive) {
+                stopTTSQueue();
+                return 'stopped_queue';
+            }
             // Stop streaming audio if active
             if (isStreamPlaying || audioContext) {
                 stopAudioStream();
@@ -950,6 +948,276 @@
             setTimeout(function() {
                 window.location.href = 'myapp://ttsstatus?status=' + status;
             }, 10);
+        }
+        
+        // ===== Queued TTS for Pipelined Speech =====
+        // This allows multiple TTS requests to be queued and played sequentially
+        // Each request has a unique ID to ensure proper ordering
+        
+        let ttsQueueActive = false;  // Is the queue system active?
+        let ttsQueueFinalized = false;  // Has 4D signaled no more requests coming?
+        let ttsQueuePlaying = false;  // Is audio currently playing from queue?
+        let ttsQueueContext = null;  // Audio context for queue playback
+        let ttsQueueScheduledEnd = 0;  // When current playback will end
+        let ttsQueueSourceNodes = [];  // Track source nodes for cleanup
+        
+        // Request tracking - key is requestId, value is {chunks: [], complete: bool}
+        let ttsRequestBuffers = {};
+        let ttsExpectedRequests = [];  // Ordered list of request IDs we're expecting
+        let ttsNextRequestToPlay = 1;  // Next request ID to play
+        
+        function initTTSQueue() {
+            // Initialize the TTS queue system
+            console.log('initTTSQueue called');
+            
+            // Stop any previous playback
+            stopTTSQueue(true);
+            
+            // Reset state
+            ttsQueueActive = true;
+            ttsQueueFinalized = false;
+            ttsQueuePlaying = false;
+            ttsQueueScheduledEnd = 0;
+            ttsQueueSourceNodes = [];
+            ttsRequestBuffers = {};
+            ttsExpectedRequests = [];
+            ttsNextRequestToPlay = 1;
+            
+            // Create audio context
+            ttsQueueContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: PCM_SAMPLE_RATE });
+            console.log('Audio context created, state:', ttsQueueContext.state);
+            
+            // Resume if suspended (needed for some browsers)
+            if (ttsQueueContext.state === 'suspended') {
+                console.log('Resuming suspended audio context');
+                ttsQueueContext.resume();
+            }
+            
+            notifyTTSStatus('speaking');
+            return 'initialized';
+        }
+        
+        function registerTTSRequest(requestId) {
+            // Register that we're expecting a TTS request with this ID
+            console.log('registerTTSRequest:', requestId);
+            ttsExpectedRequests.push(requestId);
+            ttsRequestBuffers[requestId] = { chunks: [], complete: false };
+            return 'registered';
+        }
+        
+        function addQueuedAudioChunk(base64Chunk, requestId) {
+            // Add a chunk to the buffer for a specific request ID
+            console.log('addQueuedAudioChunk for request', requestId, 'chunk size:', base64Chunk ? base64Chunk.length : 0);
+            if (!ttsQueueActive) {
+                console.log('Queue not active, ignoring chunk');
+                return 'not_active';
+            }
+            
+            if (!ttsRequestBuffers[requestId]) {
+                ttsRequestBuffers[requestId] = { chunks: [], complete: false };
+            }
+            
+            try {
+                // Decode base64 to binary
+                const binaryString = atob(base64Chunk);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                if (bytes.length < 64) {
+                    return 'skipped_small';
+                }
+                
+                // Convert to samples and add to this request's buffer
+                const samples = bytesToSamples(bytes);
+                ttsRequestBuffers[requestId].chunks.push(samples);
+                
+                return 'added';
+            } catch (error) {
+                console.error('Failed to add queued audio chunk:', error);
+                return 'error';
+            }
+        }
+        
+        function endQueuedAudioStream(requestId) {
+            // One TTS request is complete
+            console.log('endQueuedAudioStream for request', requestId);
+            if (!ttsQueueActive) {
+                console.log('Queue not active');
+                return 'not_active';
+            }
+            
+            const buffer = ttsRequestBuffers[requestId];
+            console.log('Request buffer:', buffer ? 'chunks=' + buffer.chunks.length : 'NOT FOUND');
+            if (ttsRequestBuffers[requestId]) {
+                ttsRequestBuffers[requestId].complete = true;
+            }
+            
+            // Try to play the next request in order
+            tryPlayNextInOrder();
+            
+            return 'queued';
+        }
+        
+        function errorQueuedAudioStream(requestId, error) {
+            // Error in one TTS request - mark as complete (empty) and continue
+            console.error('TTS queue error for request ' + requestId + ':', error);
+            if (ttsRequestBuffers[requestId]) {
+                ttsRequestBuffers[requestId].chunks = [];
+                ttsRequestBuffers[requestId].complete = true;
+            }
+            tryPlayNextInOrder();
+            return 'error_handled';
+        }
+        
+        function tryPlayNextInOrder() {
+            // Try to play the next request if it's ready and we're not already playing
+            console.log('tryPlayNextInOrder, nextId:', ttsNextRequestToPlay, 'active:', ttsQueueActive);
+            if (!ttsQueueContext || !ttsQueueActive) {
+                console.log('No context or not active');
+                return;
+            }
+            
+            // Check if the next expected request is ready
+            const nextId = ttsNextRequestToPlay;
+            const request = ttsRequestBuffers[nextId];
+            console.log('Looking for request', nextId, ':', request ? ('complete=' + request.complete + ', chunks=' + request.chunks.length) : 'NOT FOUND');
+            
+            if (!request || !request.complete) {
+                // Next request not ready yet, wait
+                console.log('Request not ready, waiting');
+                return;
+            }
+            
+            // Mark this request as being processed and increment counter BEFORE playing
+            ttsNextRequestToPlay++;
+            const samplesChunks = request.chunks;
+            delete ttsRequestBuffers[nextId];
+            
+            // Play this request's audio
+            if (samplesChunks.length > 0) {
+                const fullBuffer = concatFloat32Arrays(samplesChunks);
+                scheduleQueuedAudio(fullBuffer);
+            }
+            
+            // Immediately try to schedule the next one (they'll play sequentially due to ttsQueueScheduledEnd)
+            tryPlayNextInOrder();
+        }
+        
+        function scheduleQueuedAudio(samples) {
+            console.log('scheduleQueuedAudio, samples:', samples.length, 'context state:', ttsQueueContext ? ttsQueueContext.state : 'null');
+            if (!ttsQueueContext || samples.length === 0) {
+                console.log('No context or empty samples');
+                return;
+            }
+            
+            // Make sure context is running
+            if (ttsQueueContext.state === 'suspended') {
+                console.log('Resuming suspended context before playing');
+                ttsQueueContext.resume();
+            }
+            
+            ttsQueuePlaying = true;
+            
+            // Create audio buffer
+            const buffer = ttsQueueContext.createBuffer(1, samples.length, PCM_SAMPLE_RATE);
+            buffer.getChannelData(0).set(samples);
+            
+            // Schedule playback
+            const source = ttsQueueContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(ttsQueueContext.destination);
+            
+            // Calculate start time - either now or after current playback
+            const now = ttsQueueContext.currentTime;
+            const startTime = Math.max(now + 0.02, ttsQueueScheduledEnd);
+            console.log('Starting audio at', startTime, 'duration:', samples.length / PCM_SAMPLE_RATE);
+            
+            source.start(startTime);
+            ttsQueueSourceNodes.push(source);
+            
+            // Update scheduled end time
+            ttsQueueScheduledEnd = startTime + (samples.length / PCM_SAMPLE_RATE);
+            
+            // When this buffer ends
+            source.onended = function() {
+                const idx = ttsQueueSourceNodes.indexOf(source);
+                if (idx > -1) ttsQueueSourceNodes.splice(idx, 1);
+                
+                ttsQueuePlaying = ttsQueueSourceNodes.length > 0;
+                
+                // Check if we're done
+                checkQueueComplete();
+            };
+        }
+        
+        function checkQueueComplete() {
+            if (!ttsQueueFinalized) {
+                return;  // More requests might be coming
+            }
+            
+            // Check if all expected requests have been played
+            const allPlayed = ttsExpectedRequests.every(id => id < ttsNextRequestToPlay);
+            const nothingPlaying = ttsQueueSourceNodes.length === 0;
+            
+            if (allPlayed && nothingPlaying) {
+                finishTTSQueue();
+            }
+        }
+        
+        function finalizeTTSQueue() {
+            // No more TTS requests coming
+            console.log('finalizeTTSQueue called, expected:', ttsExpectedRequests, 'nextToPlay:', ttsNextRequestToPlay);
+            ttsQueueFinalized = true;
+            
+            // Try to play if we haven't started yet
+            tryPlayNextInOrder();
+            
+            // Check if already complete
+            checkQueueComplete();
+            
+            return 'finalized';
+        }
+        
+        function finishTTSQueue() {
+            ttsQueuePlaying = false;
+            ttsQueueActive = false;
+            
+            // Clean up
+            if (ttsQueueContext) {
+                ttsQueueContext.close();
+                ttsQueueContext = null;
+            }
+            ttsQueueSourceNodes = [];
+            ttsRequestBuffers = {};
+            ttsExpectedRequests = [];
+            
+            notifyTTSStatus('ended');
+        }
+        
+        function stopTTSQueue(skipNotify) {
+            // Stop the TTS queue and all playback
+            ttsQueueActive = false;
+            ttsQueuePlaying = false;
+            ttsQueueFinalized = false;
+            ttsRequestBuffers = {};
+            ttsExpectedRequests = [];
+            
+            // Stop all playing sources
+            for (const node of ttsQueueSourceNodes) {
+                try { node.stop(); } catch (e) {}
+            }
+            ttsQueueSourceNodes = [];
+            
+            if (ttsQueueContext) {
+                ttsQueueContext.close();
+                ttsQueueContext = null;
+            }
+            
+            if (!skipNotify) {
+                notifyTTSStatus('ended');
+            }
         }
         
         // ===== Audio Recording for Whisper API =====
@@ -1039,7 +1307,6 @@
                     
                     // Check if recording contained actual speech
                     if (maxAudioLevel < SPEECH_THRESHOLD) {
-                        console.log('Recording was silence only (max level: ' + maxAudioLevel + '), skipping transcription');
                         // Notify 4D that recording was silent (no speech detected)
                         notifyStatus('silence');
                         return;
@@ -1079,7 +1346,6 @@
                 
                 mediaRecorder.start();
                 isRecording = true;
-                console.log('Audio recording started with silence detection');
                 notifyStatus('recording');
                 
                 // Start monitoring for silence
@@ -1117,7 +1383,6 @@
                     // Silence detected
                     if (!silenceTimer) {
                         silenceTimer = setTimeout(function() {
-                            console.log('Silence detected, stopping recording');
                             stopRecording();
                         }, SILENCE_DURATION);
                     }
