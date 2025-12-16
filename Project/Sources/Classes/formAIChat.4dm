@@ -347,12 +347,7 @@ Function handleSpeechStatus($url : Text)
 			OBJECT SET TITLE:C194(*; "btnMicrophone"; "⏳")
 		: ($status="stopped")
 			This:C1470.isRecording:=False:C215
-			// Show microphone icon only if voice conversation mode is off
-			If (This:C1470.voiceConversationMode)
-				OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
-			Else 
-				OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
-			End if 
+			OBJECT SET TITLE:C194(*; "btnMicrophone"; "🎙️")
 		: ($status="silence")
 			// Recording contained no speech - disable voice conversation mode
 			This:C1470.isRecording:=False:C215
@@ -370,12 +365,11 @@ Function handleSpeechStatus($url : Text)
 	//MARK: Text-to-Speech functions (using OpenAI TTS API)
 
 Function speakText($text : Text)
-	// Speak text using VoiceServices TTS
+	// Speak text using VoiceServices TTS with streaming for faster response
 	var $cleanText : Text
-	var $audioBlob : Blob
-	var $base64Audio : Text
 	var $result : Text
 	var $ttsOptions : Object
+	var $formWindow : Integer
 	
 	This:C1470.ensureWebAreaInitialized()
 	
@@ -397,30 +391,27 @@ Function speakText($text : Text)
 		$cleanText:=Substring:C12($cleanText; 1; 4000)
 	End if 
 	
-	// Configure TTS options
-	// Available models: "tts-1" (fast) or "tts-1-hd" (higher quality)
-	// Available voices: alloy, echo, fable, onyx, nova, shimmer
-	// Speed: 0.25 to 4.0 (default 1.0)
-	$ttsOptions:={model: "gpt-4o-mini-tts"; voice: "nova"; speed: 1; response_format: "opus"}
+	// Configure TTS options for streaming
+	// Use PCM format for lowest latency streaming
+	// gpt-4o-mini-tts supports instructions for voice customization
+	$ttsOptions:={model: "gpt-4o-mini-tts"; voice: "nova"; speed: 1; response_format: "pcm"}
 	
-	// Call VoiceServices TTS API
-	$audioBlob:=This:C1470.voiceServices.generateSpeech($cleanText; $ttsOptions)
+	// Update status
+	OBJECT SET TITLE:C194(*; "statusIndicator"; "🔊 Speaking...")
 	
-	If (BLOB size:C605($audioBlob)>0)
-		// Update status to show TTS is speaking
-		OBJECT SET TITLE:C194(*; "statusIndicator"; "🔊 Speaking...")
-		// Convert audio blob to base64 and play via JavaScript
-		BASE64 ENCODE:C895($audioBlob; $base64Audio)
-		// Remove line breaks from base64 encoding for JavaScript compatibility
-		$base64Audio:=Replace string:C233(Replace string:C233($base64Audio; "\r"; ""); "\n"; "")
-		WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "playAudioBase64"; $result; $base64Audio; This:C1470.voiceServices.getMimeTypeForFormat($ttsOptions.response_format))
-	Else 
-		// Audio generation failed - show toolbar and start recording if needed
-		This:C1470.showToolbar()
-		If (This:C1470.voiceConversationMode)
-			This:C1470.startVoiceRecording()
-		End if 
-	End if 
+	// Initialize JavaScript audio stream
+	WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "initAudioStream"; $result)
+	
+	// Store form window for callbacks
+	$formWindow:=Current form window:C827
+	
+	// Start streaming TTS - audio chunks will be sent to JavaScript as they arrive
+	// The callbacks will receive: ($blob, $index, $formWindow) for onChunk
+	// and ($success, $error, $formWindow) for onComplete
+	This:C1470.voiceServices.generateSpeechStreaming($cleanText; $ttsOptions; \
+		Formula:C1597(OB_AudioChunk($1; $2; $3)); \
+		Formula:C1597(OB_AudioComplete($1; $2; $3)); \
+		$formWindow)
 
 Function handleTTSStatus($url : Text)
 	var $status : Text

@@ -19,79 +19,76 @@ Function getAPIKey() : Text
 	return ""
 
 	//MARK: -
-	//MARK: Text-to-Speech (TTS) using OpenAI API
+	//MARK: Text-to-Speech Streaming (using OpenAI TTS API with chunked transfer)
 
-Function generateSpeech($text : Text; $options : Object) : Blob
-	// Generate speech audio from text using OpenAI TTS API
+Function generateSpeechStreaming($text : Text; $options : Object; $onChunk : 4D:C1709.Function; $onComplete : 4D:C1709.Function; $formWindow : Integer)
+	// Generate speech audio with streaming - calls $onChunk for each data chunk
 	// $options can contain: model, voice, speed, response_format
-	// Returns audio blob (empty if error)
+	// $onChunk receives: ($chunkBlob : Blob; $chunkIndex : Integer; $formWindow : Integer)
+	// $onComplete receives: ($success : Boolean; $error : Text; $formWindow : Integer)
+	// For streaming, use PCM or WAV format for lowest latency
 	
 	var $apiKey : Text
-	var $request : 4D:C1709.HTTPRequest
-	var $httpOptions : Object
 	var $body : Object
-	var $audioBlob : Blob
+	var $httpOptions : Object
+	var $ctx : Object
 	
 	$apiKey:=This:C1470.getAPIKey()
 	If ($apiKey="")
-		return $audioBlob  // Return empty blob
+		If ($onComplete#Null:C1517)
+			$onComplete.call(Null:C1517; False:C215; "API key not configured"; $formWindow)
+		End if 
+		return 
 	End if 
 	
-	// Default options
+	// Default options - use PCM for fastest streaming
 	If ($options=Null:C1517)
 		$options:={}
 	End if 
 	
-	// Build request body with defaults
-	// Available models: "tts-1" (fast, standard) or "tts-1-hd" (slower, higher quality)
-	// Available voices: alloy, echo, fable, onyx, nova, shimmer
-	// Speed: 0.25 to 4.0 (default 1.0)
-	// Response format: mp3, opus, aac, flac, wav, pcm
+	// Build request body
+	// For streaming, PCM (raw 24kHz 16-bit) or WAV gives lowest latency
 	$body:=New object:C1471(\
-		"model"; ($options.model) ? $options.model : "tts-1"; \
+		"model"; ($options.model) ? $options.model : "gpt-4o-mini-tts"; \
 		"input"; $text; \
 		"voice"; ($options.voice) ? $options.voice : "nova"; \
-		"response_format"; ($options.response_format) ? $options.response_format : "mp3")
+		"response_format"; ($options.response_format) ? $options.response_format : "pcm")
 	
 	If ($options.speed#Null:C1517)
 		$body.speed:=$options.speed
 	End if 
 	
+	If ($options.instructions#Null:C1517)
+		$body.instructions:=$options.instructions
+	End if 
+	
+	// Create context object to track state across callbacks
+	$ctx:=New object:C1471(\
+		"chunkIndex"; 0; \
+		"lastSize"; 0; \
+		"onChunk"; $onChunk; \
+		"onComplete"; $onComplete; \
+		"formWindow"; $formWindow)
+	
+	// Build HTTP options with callbacks
 	$httpOptions:=New object:C1471
 	$httpOptions.method:="POST"
 	$httpOptions.headers:=New object:C1471
 	$httpOptions.headers["Authorization"]:="Bearer "+$apiKey
 	$httpOptions.headers["Content-Type"]:="application/json"
 	$httpOptions.body:=JSON Stringify:C1217($body)
-	$httpOptions.timeout:=30
+	$httpOptions.timeout:=60
+	$httpOptions.dataType:="blob"
 	
+	// Use onData callback - receives ($request, $event) where $event.data has the new chunk
+	$httpOptions.onData:=Formula:C1597(OB_StreamData($ctx; $1; $2))
+	$httpOptions.onTerminate:=Formula:C1597(OB_StreamTerminate($ctx; $1))
+	$httpOptions.onError:=Formula:C1597(OB_StreamError($ctx; $1))
+	
+	// Start the request
+	var $request : 4D:C1709.HTTPRequest
 	$request:=4D:C1709.HTTPRequest.new("https://api.openai.com/v1/audio/speech"; $httpOptions)
-	$request.wait()
-	
-	If ($request.response.status=200)
-		$audioBlob:=$request.response.body
-	End if 
-	
-	return $audioBlob
-
-Function getMimeTypeForFormat($format : Text) : Text
-	// Returns the MIME type for a given audio format
-	Case of 
-		: ($format="mp3")
-			return "audio/mpeg"
-		: ($format="opus")
-			return "audio/opus"
-		: ($format="aac")
-			return "audio/aac"
-		: ($format="flac")
-			return "audio/flac"
-		: ($format="wav")
-			return "audio/wav"
-		: ($format="pcm")
-			return "audio/pcm"
-		Else 
-			return "audio/mpeg"
-	End case 
+	// Note: We don't call wait() - the callbacks handle everything asynchronously
 
 	//MARK: -
 	//MARK: Speech-to-Text (STT) using OpenAI Whisper API
@@ -183,6 +180,34 @@ Function _getTranscriptionError($statusCode : Integer) : Text
 
 	//MARK: -
 	//MARK: Text cleaning for TTS
+
+Function sendAudioChunkToWebArea($chunkBlob : Blob; $chunkIndex : Integer; $formWindow : Integer)
+	// Send an audio chunk to the web area for playback
+	// Called by OB_AudioChunk helper method
+	var $base64Chunk : Text
+	var $result : Text
+	
+	// Convert chunk to base64
+	BASE64 ENCODE:C895($chunkBlob; $base64Chunk)
+	// Remove line breaks
+	$base64Chunk:=Replace string:C233(Replace string:C233($base64Chunk; "\r"; ""); "\n"; "")
+	
+	// Send chunk to JavaScript using CALL FORM (since we're in a callback context)
+	CALL FORM:C1391($formWindow; Formula:C1597(WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "addAudioChunk"; $1; $2)); ->$result; $base64Chunk)
+
+Function handleAudioStreamComplete($success : Boolean; $error : Text; $formWindow : Integer)
+	// Handle audio stream completion
+	// Called by OB_AudioComplete helper method
+	var $result : Text
+	
+	If ($success)
+		// Signal end of stream to JavaScript
+		CALL FORM:C1391($formWindow; Formula:C1597(WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "endAudioStream"; $1)); ->$result)
+	Else 
+		// Error occurred - stop stream and show error
+		CALL FORM:C1391($formWindow; Formula:C1597(WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "stopAudioStream"; $1)); ->$result)
+		// Note: handleTTSStatus will be called via JavaScript callback
+	End if 
 
 Function cleanTextForSpeech($text : Text) : Text
 	// Clean text for better TTS output

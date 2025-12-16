@@ -719,8 +719,223 @@
             }
         }
         
+        // ===== Streaming TTS Audio Player using Web Audio API =====
+        let audioContext = null;
+        let streamingSource = null;
+        let pcmChunks = [];
+        let isStreamPlaying = false;
+        let streamStartTime = 0;
+        let totalSamplesScheduled = 0;
+        let streamingSourceNodes = [];  // Track source nodes to stop them if needed
+        let chunkCount = 0;  // Track number of chunks received
+        let pendingChunks = [];  // Buffer to accumulate chunks before playing
+        let pendingSamplesCount = 0;  // Total samples in pending chunks
+        let bufferThreshold = 12000;  // Minimum samples before starting playback (0.5s at 24kHz)
+        let isBuffering = true;  // Whether we're still accumulating initial buffer
+        const PCM_SAMPLE_RATE = 24000;  // OpenAI TTS PCM is 24kHz
+        
+        // Initialize streaming audio playback
+        function initAudioStream() {
+            // Stop any previous stream first (without notifying - we're starting a new one)
+            stopAudioStream(true);
+            
+            // Create fresh audio context
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: PCM_SAMPLE_RATE });
+            
+            // Reset state
+            pcmChunks = [];
+            streamingSourceNodes = [];
+            pendingChunks = [];
+            pendingSamplesCount = 0;
+            isStreamPlaying = true;
+            isBuffering = true;
+            totalSamplesScheduled = 0;
+            chunkCount = 0;
+            streamStartTime = null;  // Will be set when we start playing
+            console.log('Audio stream initialized, buffering...');
+            notifyTTSStatus('speaking');
+            return 'initialized';
+        }
+        
+        // Convert bytes to Float32 samples
+        function bytesToSamples(bytes) {
+            const samples = new Float32Array(bytes.length / 2);
+            const dataView = new DataView(bytes.buffer);
+            for (let i = 0; i < samples.length; i++) {
+                const int16 = dataView.getInt16(i * 2, true);
+                samples[i] = int16 / 32768.0;
+            }
+            return samples;
+        }
+        
+        // Concatenate multiple Float32Arrays into one
+        function concatFloat32Arrays(arrays) {
+            let totalLength = 0;
+            for (const arr of arrays) {
+                totalLength += arr.length;
+            }
+            const result = new Float32Array(totalLength);
+            let offset = 0;
+            for (const arr of arrays) {
+                result.set(arr, offset);
+                offset += arr.length;
+            }
+            return result;
+        }
+        
+        // Schedule a batch of samples for playback
+        function scheduleAudioBatch(samples) {
+            if (!audioContext || samples.length === 0) return;
+            
+            const buffer = audioContext.createBuffer(1, samples.length, PCM_SAMPLE_RATE);
+            buffer.getChannelData(0).set(samples);
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            
+            const startTime = streamStartTime + (totalSamplesScheduled / PCM_SAMPLE_RATE);
+            console.log('Scheduling ' + samples.length + ' samples at ' + startTime.toFixed(3) + 's, total scheduled: ' + totalSamplesScheduled);
+            source.start(startTime);
+            
+            streamingSourceNodes.push(source);
+            totalSamplesScheduled += samples.length;
+        }
+        
+        // Add a chunk of PCM audio data (base64 encoded, 16-bit signed LE, 24kHz mono)
+        function addAudioChunk(base64Chunk) {
+            if (!audioContext || !isStreamPlaying) {
+                console.log('addAudioChunk: not playing, audioContext=' + !!audioContext + ' isStreamPlaying=' + isStreamPlaying);
+                return 'not_initialized';
+            }
+            
+            chunkCount++;
+            
+            try {
+                // Decode base64 to binary
+                const binaryString = atob(base64Chunk);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // Skip very small chunks
+                if (bytes.length < 64) {
+                    return 'skipped_small';
+                }
+                
+                // Convert to samples
+                const samples = bytesToSamples(bytes);
+                
+                if (isBuffering) {
+                    // Accumulate chunks in buffer
+                    pendingChunks.push(samples);
+                    pendingSamplesCount += samples.length;
+                    console.log('Buffering: ' + pendingSamplesCount + ' samples');
+                    
+                    // Check if we have enough to start playing
+                    if (pendingSamplesCount >= bufferThreshold) {
+                        console.log('Buffer ready, starting playback');
+                        isBuffering = false;
+                        streamStartTime = audioContext.currentTime + 0.05;
+                        
+                        // Concatenate and schedule all buffered audio
+                        const bufferedSamples = concatFloat32Arrays(pendingChunks);
+                        scheduleAudioBatch(bufferedSamples);
+                        pendingChunks = [];
+                        pendingSamplesCount = 0;
+                    }
+                } else {
+                    // Stream directly - schedule immediately
+                    console.log('Streaming chunk: ' + samples.length + ' samples');
+                    scheduleAudioBatch(samples);
+                }
+                
+                return 'added';
+            } catch (error) {
+                console.error('Failed to add audio chunk:', error);
+                return 'error';
+            }
+        }
+        
+        // Signal that all chunks have been sent
+        function endAudioStream() {
+            if (!audioContext) {
+                return 'not_playing';
+            }
+            
+            // If we were still buffering, play whatever we have
+            if (isBuffering && pendingChunks.length > 0) {
+                console.log('End of stream, playing remaining buffer: ' + pendingSamplesCount + ' samples');
+                isBuffering = false;
+                streamStartTime = audioContext.currentTime + 0.05;
+                const bufferedSamples = concatFloat32Arrays(pendingChunks);
+                scheduleAudioBatch(bufferedSamples);
+                pendingChunks = [];
+                pendingSamplesCount = 0;
+            }
+            
+            isStreamPlaying = false;
+            
+            // Calculate when playback will finish
+            if (streamStartTime && totalSamplesScheduled > 0) {
+                const endTime = streamStartTime + (totalSamplesScheduled / PCM_SAMPLE_RATE);
+                const remainingTime = (endTime - audioContext.currentTime) * 1000;
+                
+                // Notify 4D when playback finishes
+                if (remainingTime > 0) {
+                    setTimeout(function() {
+                        notifyTTSStatus('ended');
+                    }, remainingTime + 100);
+                } else {
+                    notifyTTSStatus('ended');
+                }
+            } else {
+                notifyTTSStatus('ended');
+            }
+            
+            return 'ending';
+        }
+        
+        // Stop streaming audio playback
+        // skipNotify: if true, don't send 'ended' notification (used when stopping to start a new stream)
+        function stopAudioStream(skipNotify) {
+            isStreamPlaying = false;
+            
+            // Stop all scheduled source nodes
+            if (streamingSourceNodes) {
+                for (const node of streamingSourceNodes) {
+                    try {
+                        node.stop();
+                    } catch (e) {
+                        // Ignore errors if already stopped
+                    }
+                }
+                streamingSourceNodes = [];
+            }
+            
+            if (audioContext) {
+                // Close context to release resources
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            totalSamplesScheduled = 0;
+            
+            // Only notify if not skipping (when stopping for cleanup before new stream, skip notification)
+            if (!skipNotify) {
+                notifyTTSStatus('ended');
+            }
+            return 'stopped';
+        }
+        
         // Stop any playing audio
         function stopSpeaking() {
+            // Stop streaming audio if active
+            if (isStreamPlaying || audioContext) {
+                stopAudioStream();
+            }
+            // Stop regular audio if playing
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio = null;
@@ -744,7 +959,7 @@
         let audioStream = null;
         
         // Voice Activity Detection (VAD) variables
-        let audioContext = null;
+        let vadAudioContext = null;  // Renamed to avoid conflict with streaming audioContext
         let analyser = null;
         let silenceTimer = null;
         const SILENCE_THRESHOLD = 15;  // Audio level below this is considered silence (0-255)
@@ -781,10 +996,10 @@
                 maxAudioLevel = 0;  // Reset max level for this recording
                 
                 // Set up audio analysis for silence detection
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
+                vadAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = vadAudioContext.createAnalyser();
                 analyser.fftSize = 256;
-                const source = audioContext.createMediaStreamSource(stream);
+                const source = vadAudioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
                 
                 // Try different mime types for compatibility
@@ -811,9 +1026,9 @@
                         clearTimeout(silenceTimer);
                         silenceTimer = null;
                     }
-                    if (audioContext) {
-                        audioContext.close();
-                        audioContext = null;
+                    if (vadAudioContext) {
+                        vadAudioContext.close();
+                        vadAudioContext = null;
                     }
                     
                     // Stop all tracks

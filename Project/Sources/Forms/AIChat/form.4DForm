@@ -230,7 +230,7 @@
 				"statusIndicator": {
 					"type": "button",
 					"text": "⏳ Generating...",
-					"top": 843,
+					"top": 804,
 					"left": 625,
 					"width": 328,
 					"height": 36,
@@ -254,7 +254,7 @@
 			]
 		}
 	],
-	"geometryStamp": 2750,
+	"geometryStamp": 2751,
 	"editor": {
 		"activeView": "View 1",
 		"defaultView": "View 1",
