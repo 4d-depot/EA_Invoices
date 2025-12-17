@@ -1,6 +1,11 @@
 // VoiceServices class
 // Handles Speech-to-Text (STT) using OpenAI Whisper and Text-to-Speech (TTS) using OpenAI TTS API
 
+// TTS defaults
+property kDefaultModel : Text:="gpt-4o-mini-tts"
+property kDefaultVoice : Text:="nova"
+property kDefaultFormat : Text:="pcm"
+
 Class constructor()
 	
 	//MARK: -
@@ -21,38 +26,19 @@ Function getAPIKey() : Text
 	//MARK: -
 	//MARK: Text-to-Speech Streaming (using OpenAI TTS API with chunked transfer)
 
-Function generateSpeechStreaming($text : Text; $options : Object; $onChunk : 4D:C1709.Function; $onComplete : 4D:C1709.Function; $formWindow : Integer)
-	// Generate speech audio with streaming - calls $onChunk for each data chunk
-	// $options can contain: model, voice, speed, response_format
-	// $onChunk receives: ($chunkBlob : Blob; $chunkIndex : Integer; $formWindow : Integer)
-	// $onComplete receives: ($success : Boolean; $error : Text; $formWindow : Integer)
-	// For streaming, use PCM or WAV format for lowest latency
-	
-	var $apiKey : Text
+Function _buildTTSBody($text : Text; $options : Object) : Object
+	// Build the request body for TTS API
 	var $body : Object
-	var $httpOptions : Object
-	var $ctx : Object
 	
-	$apiKey:=This:C1470.getAPIKey()
-	If ($apiKey="")
-		If ($onComplete#Null:C1517)
-			$onComplete.call(Null:C1517; False:C215; "API key not configured"; $formWindow)
-		End if 
-		return 
-	End if 
-	
-	// Default options - use PCM for fastest streaming
 	If ($options=Null:C1517)
 		$options:={}
 	End if 
 	
-	// Build request body
-	// For streaming, PCM (raw 24kHz 16-bit) or WAV gives lowest latency
 	$body:=New object:C1471(\
-		"model"; ($options.model) ? $options.model : "gpt-4o-mini-tts"; \
+		"model"; ($options.model) ? $options.model : This:C1470.kDefaultModel; \
 		"input"; $text; \
-		"voice"; ($options.voice) ? $options.voice : "nova"; \
-		"response_format"; ($options.response_format) ? $options.response_format : "pcm")
+		"voice"; ($options.voice) ? $options.voice : This:C1470.kDefaultVoice; \
+		"response_format"; ($options.response_format) ? $options.response_format : This:C1470.kDefaultFormat)
 	
 	If ($options.speed#Null:C1517)
 		$body.speed:=$options.speed
@@ -62,95 +48,43 @@ Function generateSpeechStreaming($text : Text; $options : Object; $onChunk : 4D:
 		$body.instructions:=$options.instructions
 	End if 
 	
-	// Create context object to track state across callbacks
-	$ctx:=New object:C1471(\
-		"chunkIndex"; 0; \
-		"lastSize"; 0; \
-		"onChunk"; $onChunk; \
-		"onComplete"; $onComplete; \
-		"formWindow"; $formWindow)
-	
-	// Build HTTP options with callbacks
-	$httpOptions:=New object:C1471
-	$httpOptions.method:="POST"
-	$httpOptions.headers:=New object:C1471
-	$httpOptions.headers["Authorization"]:="Bearer "+$apiKey
-	$httpOptions.headers["Content-Type"]:="application/json"
-	$httpOptions.body:=JSON Stringify:C1217($body)
-	$httpOptions.timeout:=60
-	$httpOptions.dataType:="blob"
-	
-	// Use onData callback - receives ($request, $event) where $event.data has the new chunk
-	$httpOptions.onData:=Formula:C1597(OB_StreamData($ctx; $1; $2))
-	$httpOptions.onTerminate:=Formula:C1597(OB_StreamTerminate($ctx; $1))
-	$httpOptions.onError:=Formula:C1597(OB_StreamError($ctx; $1))
-	
-	// Start the request
-	var $request : 4D:C1709.HTTPRequest
-	$request:=4D:C1709.HTTPRequest.new("https://api.openai.com/v1/audio/speech"; $httpOptions)
-	// Note: We don't call wait() - the callbacks handle everything asynchronously
+	return $body
 
-Function generateSpeechStreamingWithId($text : Text; $options : Object; $requestId : Integer; $onChunk : 4D:C1709.Function; $onComplete : 4D:C1709.Function; $formWindow : Integer)
-	// Same as generateSpeechStreaming but includes a requestId for ordering multiple requests
-	// $onChunk receives: ($chunkBlob : Blob; $chunkIndex : Integer; $formWindow : Integer; $requestId : Integer)
-	// $onComplete receives: ($success : Boolean; $error : Text; $formWindow : Integer; $requestId : Integer)
+Function generateSpeechStreaming($text : Text; $options : Object; $onChunk : 4D:C1709.Function; $onComplete : 4D:C1709.Function; $formWindow : Integer; $requestId : Integer:=0)
+	// Generate speech audio with streaming - calls $onChunk for each data chunk
+	// $options can contain: model, voice, speed, response_format, instructions
+	// $onChunk receives: ($chunkBlob : Blob; $chunkIndex : Integer; $formWindow : Integer[; $requestId : Integer])
+	// $onComplete receives: ($success : Boolean; $error : Text; $formWindow : Integer[; $requestId : Integer])
+	// For streaming, use PCM or WAV format for lowest latency
+	// $requestId is optional (default 0) - when provided, callbacks include it for ordering multiple requests
 	
 	var $apiKey : Text
 	var $body : Object
-	var $httpOptions : Object
-	var $ctx : Object
+	var $requestOptions : cs:C1710.TTSRequestHandler
 	
 	$apiKey:=This:C1470.getAPIKey()
 	If ($apiKey="")
 		If ($onComplete#Null:C1517)
-			$onComplete.call(Null:C1517; False:C215; "API key not configured"; $formWindow; $requestId)
+			If ($requestId#0)
+				$onComplete.call(Null:C1517; False:C215; "API key not configured"; $formWindow; $requestId)
+			Else 
+				$onComplete.call(Null:C1517; False:C215; "API key not configured"; $formWindow)
+			End if 
 		End if 
 		return 
 	End if 
 	
-	If ($options=Null:C1517)
-		$options:={}
-	End if 
+	// Build request body using helper
+	$body:=This:C1470._buildTTSBody($text; $options)
 	
-	$body:=New object:C1471(\
-		"model"; ($options.model) ? $options.model : "gpt-4o-mini-tts"; \
-		"input"; $text; \
-		"voice"; ($options.voice) ? $options.voice : "nova"; \
-		"response_format"; ($options.response_format) ? $options.response_format : "pcm")
+	// Create the request options class instance
+	// This class contains all HTTP options AND the callback methods (onData, onError, onTerminate)
+	$requestOptions:=cs:C1710.TTSRequestHandler.new($apiKey; $body; $onChunk; $onComplete; $formWindow; $requestId)
 	
-	If ($options.speed#Null:C1517)
-		$body.speed:=$options.speed
-	End if 
-	
-	If ($options.instructions#Null:C1517)
-		$body.instructions:=$options.instructions
-	End if 
-	
-	// Create context object - includes requestId for ordering
-	$ctx:=New object:C1471(\
-		"chunkIndex"; 0; \
-		"lastSize"; 0; \
-		"requestId"; $requestId; \
-		"onChunk"; $onChunk; \
-		"onComplete"; $onComplete; \
-		"formWindow"; $formWindow)
-	
-	$httpOptions:=New object:C1471
-	$httpOptions.method:="POST"
-	$httpOptions.headers:=New object:C1471
-	$httpOptions.headers["Authorization"]:="Bearer "+$apiKey
-	$httpOptions.headers["Content-Type"]:="application/json"
-	$httpOptions.body:=JSON Stringify:C1217($body)
-	$httpOptions.timeout:=60
-	$httpOptions.dataType:="blob"
-	
-	// Use callbacks that pass requestId
-	$httpOptions.onData:=Formula:C1597(OB_StreamDataWithId($ctx; $1; $2))
-	$httpOptions.onTerminate:=Formula:C1597(OB_StreamTerminateWithId($ctx; $1))
-	$httpOptions.onError:=Formula:C1597(OB_StreamErrorWithId($ctx; $1))
-	
+	// Start the request - the class instance IS the options parameter
 	var $request : 4D:C1709.HTTPRequest
-	$request:=4D:C1709.HTTPRequest.new("https://api.openai.com/v1/audio/speech"; $httpOptions)
+	$request:=4D:C1709.HTTPRequest.new($requestOptions.kTTSEndpoint; $requestOptions)
+	// Note: We don't call wait() - the callbacks handle everything asynchronously
 
 	//MARK: -
 	//MARK: Speech-to-Text (STT) using OpenAI Whisper API

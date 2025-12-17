@@ -775,10 +775,10 @@ Function _queueTTSText($text : Text)
 	WA EXECUTE JAVASCRIPT FUNCTION:C1043(*; "Web Area"; "registerTTSRequest"; $result; $requestId)
 	
 	// Start streaming TTS for this chunk, passing the request ID
-	This:C1470.voiceServices.generateSpeechStreamingWithId($cleanText; $ttsOptions; $requestId; \
+	This:C1470.voiceServices.generateSpeechStreaming($cleanText; $ttsOptions; \
 		Formula:C1597(OB_AudioChunkQueued($1; $2; $3; $4)); \
 		Formula:C1597(OB_AudioCompleteQueued($1; $2; $3; $4)); \
-		$formWindow)
+		$formWindow; $requestId)
 
 Function _finalizeTTSQueue()
 	// Signal to JavaScript that no more TTS requests are coming

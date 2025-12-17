@@ -1,0 +1,1363 @@
+// ===== CONFIGURATION CONSTANTS =====
+const CONFIG = {
+    // Audio settings
+    PCM_SAMPLE_RATE: 24000,          // OpenAI TTS PCM is 24kHz
+    BUFFER_THRESHOLD: 12000,          // Min samples before starting playback (0.5s at 24kHz)
+    
+    // Voice Activity Detection
+    SILENCE_THRESHOLD: 15,            // Audio level below this is considered silence (0-255)
+    SILENCE_DURATION: 1500,           // Stop after 1.5 seconds of silence
+    MIN_RECORDING_TIME: 500,          // Min recording time before silence detection kicks in
+    SPEECH_THRESHOLD: 25,             // Min max level to consider as speech
+    
+    // UI
+    COPY_BUTTON_FEEDBACK_DURATION: 2000,
+    SCROLL_DELAY: 100
+};
+
+// ===== UTILITY FUNCTIONS =====
+
+// Decode base64 to Uint8Array
+function base64ToBytes(base64String) {
+    const binaryString = atob(base64String);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+}
+
+// Convert bytes to Float32 samples (PCM 16-bit little-endian)
+function bytesToSamples(bytes) {
+    const byteCount = bytes.length - (bytes.length % 2);
+    if (byteCount === 0) return new Float32Array(0);
+    
+    const samples = new Float32Array(byteCount / 2);
+    const dataView = new DataView(bytes.buffer, bytes.byteOffset, byteCount);
+    
+    for (let i = 0; i < samples.length; i++) {
+        samples[i] = dataView.getInt16(i * 2, true) / 32768.0;
+    }
+    return samples;
+}
+
+// Concatenate multiple Float32Arrays into one
+function concatFloat32Arrays(arrays) {
+    const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
+    const result = new Float32Array(totalLength);
+    let offset = 0;
+    for (const arr of arrays) {
+        result.set(arr, offset);
+        offset += arr.length;
+    }
+    return result;
+}
+
+// Helper to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Notify 4D via URL scheme
+function notify4D(scheme, params) {
+    setTimeout(() => {
+        let queryString;
+        if (typeof params === 'string') {
+            queryString = params;
+        } else {
+            queryString = Object.entries(params)
+                .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+                .join('&');
+        }
+        window.location.href = `myapp://${scheme}?${queryString}`;
+    }, 10);
+}
+
+// Create an AudioContext with proper sample rate
+function createAudioContext() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)({ 
+        sampleRate: CONFIG.PCM_SAMPLE_RATE 
+    });
+    if (ctx.state === 'suspended') {
+        ctx.resume();
+    }
+    return ctx;
+}
+
+// Write to clipboard with HTML and plain text fallback
+async function writeToClipboard(htmlContent, textContent, onSuccess, onError) {
+    try {
+        const clipboardItem = new ClipboardItem({
+            'text/html': new Blob([htmlContent], { type: 'text/html' }),
+            'text/plain': new Blob([textContent], { type: 'text/plain' })
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        if (onSuccess) onSuccess();
+    } catch (err) {
+        console.error('Clipboard write failed:', err);
+        // Fallback to plain text only
+        try {
+            await navigator.clipboard.writeText(textContent);
+            if (onSuccess) onSuccess();
+        } catch (err2) {
+            console.error('Fallback copy failed:', err2);
+            if (onError) onError(err2);
+        }
+    }
+}
+
+// ===== COPY BUTTON HELPERS =====
+
+// Helper to update button feedback state
+function updateCopyButtonState(button, text, cssClass, duration = CONFIG.COPY_BUTTON_FEEDBACK_DURATION) {
+    const originalText = button.textContent;
+    button.textContent = text;
+    if (cssClass) button.classList.add(cssClass);
+    
+    setTimeout(() => {
+        button.textContent = originalText;
+        if (cssClass) button.classList.remove(cssClass);
+    }, duration);
+}
+
+// Function to copy table to clipboard in Excel-compatible format
+function copyTableToExcel(button) {
+    try {
+        const table = button.closest('table');
+        if (!table) return;
+        
+        // Extract table data
+        const tsvRows = [];
+        const htmlRows = [];
+        
+        // Process header rows - check both thead and first row if no thead
+        let headerRows = table.querySelectorAll('thead tr');
+        if (headerRows.length === 0) {
+            const firstRow = table.querySelector('tr');
+            if (firstRow && firstRow.querySelector('th')) {
+                headerRows = [firstRow];
+            }
+        }
+        
+        headerRows.forEach(row => {
+            const cells = row.querySelectorAll('th');
+            if (cells.length > 0) {
+                const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+                tsvRows.push(rowData.join('\t'));
+                htmlRows.push('<tr>' + rowData.map(cell => `<th>${cell}</th>`).join('') + '</tr>');
+            }
+        });
+        
+        // Process body rows
+        const bodyRows = table.querySelectorAll('tbody tr');
+        const rowsToProcess = bodyRows.length === 0 ? 
+            Array.from(table.querySelectorAll('tr')).filter(row => 
+                !(row.querySelector('th') && !row.querySelector('td'))
+            ) : bodyRows;
+        
+        rowsToProcess.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length > 0) {
+                const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+                tsvRows.push(rowData.join('\t'));
+                htmlRows.push('<tr>' + rowData.map(cell => `<td>${cell}</td>`).join('') + '</tr>');
+            }
+        });
+        
+        const tsvData = tsvRows.join('\n') + '\n';
+        const htmlData = '<table border="1" cellspacing="0" cellpadding="4">' + htmlRows.join('') + '</table>';
+        
+        writeToClipboard(
+            htmlData, 
+            tsvData,
+            () => updateCopyButtonState(button, 'Copied!', 'copied'),
+            () => updateCopyButtonState(button, 'Failed', null)
+        );
+    } catch (error) {
+        console.error('copyTableToExcel error:', error);
+    }
+}
+
+// Function to copy assistant message content to clipboard
+async function copyMessageContent(button) {
+    try {
+        // Get the message content element
+        const messageDiv = button.closest('.assistant-message');
+        const contentDiv = messageDiv.querySelector('.message-content');
+        
+        // Clone the content to avoid modifying the original
+        const clonedContent = contentDiv.cloneNode(true);
+        
+        // Remove tool call elements from the clone (they're not part of the message content)
+        const toolCalls = clonedContent.querySelectorAll('.tool-call');
+        toolCalls.forEach(tc => tc.remove());
+        
+        // Remove think-tag elements
+        const thinkTags = clonedContent.querySelectorAll('.think-tag');
+        thinkTags.forEach(tag => tag.remove());
+        
+        // Remove table copy buttons
+        const tableCopyButtons = clonedContent.querySelectorAll('.table-copy-button');
+        tableCopyButtons.forEach(btn => btn.remove());
+        
+        // Apply inline styles to tables for Word compatibility
+        const tables = clonedContent.querySelectorAll('table');
+        tables.forEach(table => {
+            // Apply table styles
+            table.style.borderCollapse = 'collapse';
+            table.style.width = '100%';
+            table.style.margin = '12px 0';
+            
+            // Apply styles to all th elements
+            const ths = table.querySelectorAll('th');
+            ths.forEach(th => {
+                if (!th.getAttribute('style') || !th.getAttribute('style').includes('text-align')) {
+                    th.style.padding = '12px';
+                    th.style.textAlign = 'left';
+                    th.style.border = '1px solid #e5e7eb';
+                    th.style.background = '#f8fafc';
+                    th.style.fontWeight = '600';
+                }
+            });
+            
+            // Apply styles to all td elements
+            const tds = table.querySelectorAll('td');
+            tds.forEach(td => {
+                td.style.padding = '12px';
+                td.style.border = '1px solid #e5e7eb';
+                
+                // Preserve align attribute
+                const align = td.getAttribute('align');
+                if (align) {
+                    td.style.textAlign = align;
+                } else if (!td.style.textAlign) {
+                    td.style.textAlign = 'left';
+                }
+            });
+            
+            // Apply styles to all tr elements
+            const trs = table.querySelectorAll('tr');
+            trs.forEach(tr => {
+                tr.style.borderBottom = '1px solid #e5e7eb';
+            });
+        });
+        
+        // Convert charts to images
+        const chartContainers = clonedContent.querySelectorAll('.chart-container[data-chart-rendered="true"]');
+        const chartPromises = Array.from(chartContainers).map(async (container) => {
+            const canvas = container.querySelector('canvas');
+            if (canvas && canvas.id) {
+                try {
+                    // Get the original canvas from the DOM (not the clone)
+                    const originalCanvas = document.getElementById(canvas.id);
+                    if (originalCanvas) {
+                        // Convert canvas to data URL
+                        const dataUrl = originalCanvas.toDataURL('image/png');
+                        
+                        // Replace the chart container with an img tag
+                        const img = document.createElement('img');
+                        img.src = dataUrl;
+                        img.style.maxWidth = '100%';
+                        img.style.height = 'auto';
+                        img.alt = 'Chart';
+                        
+                        // Preserve title if exists
+                        const title = container.querySelector('.chart-title');
+                        if (title) {
+                            const titleClone = title.cloneNode(true);
+                            container.innerHTML = '';
+                            container.appendChild(titleClone);
+                            container.appendChild(img);
+                        } else {
+                            container.innerHTML = '';
+                            container.appendChild(img);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to convert chart to image:', err);
+                }
+            }
+        });
+        
+        await Promise.all(chartPromises);
+        
+        // Get HTML content and plain text
+        const htmlContent = clonedContent.innerHTML;
+        const textContent = clonedContent.textContent.trim();
+        
+        // Copy using shared helper
+        writeToClipboard(
+            htmlContent,
+            textContent,
+            () => updateCopyButtonState(button, 'Copied!', 'copied'),
+            () => updateCopyButtonState(button, 'Failed', null)
+        );
+    } catch (error) {
+        console.error('copyMessageContent error:', error);
+    }
+}
+
+// Store chart instances to prevent memory leaks
+const chartInstances = {};
+
+// Function to render a chart from configuration
+function renderChart(canvasId, chartConfig) {
+    try {
+        // Destroy existing chart if it exists
+        if (chartInstances[canvasId]) {
+            chartInstances[canvasId].destroy();
+            delete chartInstances[canvasId];
+        }
+        
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.error('Canvas not found:', canvasId);
+            return;
+        }
+        
+        // Set maintainAspectRatio based on chart type
+        if (!chartConfig.options) {
+            chartConfig.options = {};
+        }
+        
+        // Ensure scales configuration exists and disable borders
+        if (!chartConfig.options.scales) {
+            chartConfig.options.scales = {};
+        }
+        if (chartConfig.options.scales.x) {
+            if (!chartConfig.options.scales.x.grid) chartConfig.options.scales.x.grid = {};
+            chartConfig.options.scales.x.grid.drawBorder = false;
+        }
+        if (chartConfig.options.scales.y) {
+            if (!chartConfig.options.scales.y.grid) chartConfig.options.scales.y.grid = {};
+            chartConfig.options.scales.y.grid.drawBorder = false;
+        }
+        
+        // For pie/doughnut charts, maintain aspect ratio to keep them circular
+        // For other charts, allow stretching to fill container
+        const isPieChart = chartConfig.type === 'pie' || chartConfig.type === 'doughnut';
+        chartConfig.options.maintainAspectRatio = isPieChart;
+        chartConfig.options.aspectRatio = isPieChart ? 1 : 2;
+        
+        const ctx = canvas.getContext('2d');
+        chartInstances[canvasId] = new Chart(ctx, chartConfig);
+    } catch (error) {
+        console.error('renderChart error:', error);
+    }
+}
+
+// Function to clean up incomplete tags and sanitize HTML
+function cleanupHTML(html) {
+    try {
+        // Remove <spoken> tags but keep their content (these are for TTS only, not display)
+        html = html.replace(/<spoken>/gi, '');
+        html = html.replace(/<\/spoken>/gi, '');
+        
+        // Remove incomplete opening tags at end of string (streaming artifacts)
+        html = html.replace(/<[a-zA-Z][a-zA-Z0-9\-]*(?![^<]*>)[^<]*$/g, '');
+        
+        // Remove empty incomplete tags like <> or < >
+        html = html.replace(/<\s*>/g, '');
+        
+        // Use DOMPurify for sanitization with permissive config for rich content
+        if (typeof DOMPurify !== 'undefined') {
+            html = DOMPurify.sanitize(html, {
+                ADD_TAGS: ['canvas', 'style'],
+                ADD_ATTR: ['data-chart-config', 'data-chart-id', 'data-chart-rendered', 'onclick', 'target'],
+                ALLOW_DATA_ATTR: true,
+                KEEP_CONTENT: true
+            });
+        }
+        
+        return html;
+    } catch (error) {
+        console.error('cleanupHTML error:', error);
+        return html;
+    }
+}
+
+// Function to initialize all charts in the container
+function initializeCharts() {
+    try {
+        const chartContainers = document.querySelectorAll('.chart-container');
+        
+        chartContainers.forEach(container => {
+            const chartId = container.getAttribute('data-chart-id');
+            const isStreaming = container.classList.contains('streaming');
+            const rendered = container.getAttribute('data-chart-rendered');
+            
+            // Skip streaming chart containers (they show skeleton)
+            if (isStreaming) {
+                return;
+            }
+            
+            // Skip if already rendered (using data attribute flag)
+            if (rendered === 'true') {
+                return;
+            }
+            
+            const canvas = container.querySelector('canvas');
+            if (canvas && canvas.dataset.chartConfig) {
+                const canvasId = canvas.id;
+                
+                try {
+                    const chartConfig = JSON.parse(canvas.dataset.chartConfig);
+                    renderChart(canvasId, chartConfig);
+                    // Mark as rendered
+                    container.setAttribute('data-chart-rendered', 'true');
+                } catch (e) {
+                    console.error('Failed to parse chart config:', e);
+                }
+            }
+        });
+    } catch (error) {
+        console.error('initializeCharts error:', error);
+    }
+}
+
+// Function to extract style tags and inject them into document head
+function extractAndInjectStyles(htmlContent) {
+    try {
+        // Create a temporary div to parse HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = htmlContent;
+        
+        // Find all style tags
+        const styleTags = temp.querySelectorAll('style');
+        
+        styleTags.forEach((styleTag, index) => {
+            // Create a unique ID for this style tag to avoid duplicates
+            const styleId = 'dynamic-style-' + Date.now() + '-' + index;
+            
+            // Check if this style already exists
+            if (!document.getElementById(styleId)) {
+                // Create a new style element
+                const newStyle = document.createElement('style');
+                newStyle.id = styleId;
+                newStyle.textContent = styleTag.textContent;
+                
+                // Scope the styles to .html-content to avoid affecting the whole page
+                // This wraps all rules with .html-content prefix
+                const scopedCSS = scopeStylesToContent(styleTag.textContent);
+                newStyle.textContent = scopedCSS;
+                
+                // Inject into head
+                document.head.appendChild(newStyle);
+            }
+        });
+    } catch (error) {
+        console.error('extractAndInjectStyles error:', error);
+    }
+}
+
+// Function to scope CSS rules to .html-content
+function scopeStylesToContent(css) {
+    try {
+        // Simple scoping: prefix each selector with .html-content
+        // This is a basic implementation - may need refinement for complex CSS
+        return css.replace(/([^{}]+)\{/g, function(match, selector) {
+            // Skip @-rules like @media, @keyframes
+            if (selector.trim().startsWith('@')) {
+                return match;
+            }
+            // Add .html-content scope
+            const trimmedSelector = selector.trim();
+            return '.html-content ' + trimmedSelector + ' {';
+        });
+    } catch (error) {
+        console.error('scopeStylesToContent error:', error);
+        return css;
+    }
+}
+
+// Function to update messages via 4D JavaScript injection
+function updateMessages(htmlContent) {
+    try {
+        const container = document.querySelector('.chat-container');
+        if (container) {
+            // Extract and inject <style> tags from HTML content
+            extractAndInjectStyles(htmlContent);
+            
+            // Check if we have any streaming chart skeletons
+            const hasStreamingSkeletons = container.querySelector('.chart-container.streaming') !== null;
+            
+            if (!hasStreamingSkeletons) {
+                // No streaming skeletons - safe to do full innerHTML replacement
+                
+                // Get all RENDERED chart containers to preserve
+                const existingCharts = container.querySelectorAll('.chart-container[data-chart-rendered="true"]');
+                const existingChartsMap = new Map();
+                
+                existingCharts.forEach(chart => {
+                    const chartId = chart.getAttribute('data-chart-id');
+                    if (chartId) {
+                        existingChartsMap.set(chartId, chart);
+                    }
+                });
+                
+                // Clean up incomplete tags and fix unclosed tags
+                htmlContent = cleanupHTML(htmlContent);
+                
+                // Replace the container content
+                container.innerHTML = htmlContent;
+                
+                // Restore rendered charts
+                const newCharts = container.querySelectorAll('.chart-container');
+                newCharts.forEach(newChart => {
+                    const chartId = newChart.getAttribute('data-chart-id');
+                    const existingChart = chartId && existingChartsMap.get(chartId);
+                    if (existingChart && existingChart.getAttribute('data-chart-rendered') === 'true') {
+                        newChart.replaceWith(existingChart);
+                    }
+                });
+            } else {
+                // We have streaming skeletons - avoid innerHTML to preserve animations
+                
+                // Create a temporary container to parse the new HTML
+                const tempContainer = document.createElement('div');
+                tempContainer.innerHTML = cleanupHTML(htmlContent);
+                
+                // Get current and new message elements
+                const currentMessages = Array.from(container.querySelectorAll('.message'));
+                const newMessages = Array.from(tempContainer.querySelectorAll('.message'));
+                
+                // Update or add messages
+                newMessages.forEach((newMsg, index) => {
+                    if (index < currentMessages.length) {
+                        const currentMsg = currentMessages[index];
+                        // Check if this message has a streaming skeleton
+                        const hasStreamingSkeleton = currentMsg.querySelector('.chart-container.streaming') !== null;
+                        const newHasStreamingSkeleton = newMsg.querySelector('.chart-container.streaming') !== null;
+                        
+                        if (!hasStreamingSkeleton || (hasStreamingSkeleton && !newHasStreamingSkeleton)) {
+                            // Safe to replace this message if:
+                            // - It doesn't have a streaming skeleton, OR
+                            // - It had a streaming skeleton but the new one doesn't (transition complete)
+                            currentMsg.replaceWith(newMsg);
+                        }
+                        // Still has streaming skeleton - leave it untouched
+                    } else {
+                        // New message - append it
+                        container.appendChild(newMsg);
+                    }
+                });
+                
+                // Remove extra old messages if new content has fewer
+                while (currentMessages.length > newMessages.length) {
+                    currentMessages[currentMessages.length - 1].remove();
+                    currentMessages.pop();
+                }
+            }
+            
+            // Initialize all thinking bubbles
+            initializeThinkingBubbles();
+            
+            // Initialize only NEW charts (not yet rendered)
+            initializeCharts();
+            
+            // Add copy buttons to tables
+            addTableCopyButtons();
+            
+            // Hide copy buttons on messages with streaming content
+            hideCopyButtonsOnStreaming();
+            
+            // Scroll to bottom smoothly
+            setTimeout(() => {
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, CONFIG.SCROLL_DELAY);
+        }
+    } catch (error) {
+        console.error('updateMessages error:', error);
+    }
+}
+
+// Function to add copy buttons to tables
+function addTableCopyButtons() {
+    try {
+        const tables = document.querySelectorAll('table');
+        tables.forEach(table => {
+            // Check if button already exists
+            if (table.querySelector('.table-copy-button')) return;
+            
+            // Create copy button
+            const copyButton = document.createElement('button');
+            copyButton.className = 'table-copy-button';
+            copyButton.textContent = 'Copy';
+            copyButton.onclick = function(e) {
+                e.stopPropagation();
+                copyTableToExcel(this);
+            };
+            
+            // Insert button as first child of table
+            table.insertBefore(copyButton, table.firstChild);
+        });
+    } catch (error) {
+        console.error('addTableCopyButtons error:', error);
+    }
+}
+
+// Function to hide copy buttons when streaming content is present
+function hideCopyButtonsOnStreaming() {
+    const messages = document.querySelectorAll('.assistant-message');
+    messages.forEach(message => {
+        const hasStreaming = message.querySelector('.streaming');
+        const copyButton = message.querySelector('.copy-button');
+        if (copyButton) {
+            if (hasStreaming) {
+                copyButton.style.display = 'none';
+            } else {
+                copyButton.style.display = '';
+            }
+        }
+    });
+}
+
+// Function to initialize thinking bubbles with expand/collapse functionality
+function initializeThinkingBubbles() {
+    const thinkTags = document.querySelectorAll('.think-tag');
+    
+    thinkTags.forEach(thinkTag => {
+        const content = thinkTag.textContent.trim();
+        const isStreaming = thinkTag.classList.contains('streaming');
+        
+        if (isStreaming) {
+            // Streaming: show full content with icon
+            thinkTag.innerHTML = `<span class="thinking-icon">💭</span> ${escapeHtml(content)}`;
+        } else if (content.length > 0) {
+            // Complete: show summary with expand toggle
+            const summary = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+            const thinkingId = 'thinking-' + Math.random().toString(36).substr(2, 9);
+            
+            thinkTag.innerHTML = `
+                <span class="thinking-icon">💭</span>
+                <span class="thinking-summary">${escapeHtml(summary)}</span>
+                <span class="thinking-full" style="display: none;">${escapeHtml(content)}</span>
+                <button class="thinking-toggle" data-target="${thinkingId}">▼</button>
+            `;
+            thinkTag.classList.add('collapsed');
+            thinkTag.querySelector('.thinking-full').id = thinkingId;
+            
+            // Add click handler to the whole bubble
+            thinkTag.addEventListener('click', function(e) {
+                toggleThinking(thinkingId);
+            });
+        }
+    });
+}
+
+// Function to toggle thinking bubble expansion
+function toggleThinking(thinkingId) {
+    const fullContent = document.getElementById(thinkingId);
+    if (!fullContent) return;
+    
+    const thinkTag = fullContent.closest('.think-tag');
+    const summary = thinkTag.querySelector('.thinking-summary');
+    const toggle = thinkTag.querySelector('.thinking-toggle');
+    
+    if (thinkTag.classList.contains('collapsed')) {
+        // Expand with fade in
+        summary.classList.add('hiding');
+        setTimeout(() => {
+            summary.style.display = 'none';
+            fullContent.style.display = 'inline';
+            // Force reflow
+            fullContent.offsetHeight;
+            fullContent.classList.add('visible');
+        }, 200);
+        toggle.textContent = '▲';
+        thinkTag.classList.remove('collapsed');
+    } else {
+        // Collapse with fade out
+        fullContent.classList.remove('visible');
+        setTimeout(() => {
+            fullContent.style.display = 'none';
+            summary.style.display = 'inline';
+            summary.classList.remove('hiding');
+        }, 200);
+        toggle.textContent = '▼';
+        thinkTag.classList.add('collapsed');
+    }
+}
+
+// Link hover tooltip functionality
+function initLinkTooltips() {
+    const tooltip = document.getElementById('linkTooltip');
+    
+    // Add listeners to all links
+    document.addEventListener('mouseover', function(e) {
+        const link = e.target.closest('a');
+        if (link && link.href) {
+            tooltip.textContent = link.href;
+            tooltip.classList.add('visible');
+        }
+    });
+    
+    document.addEventListener('mouseout', function(e) {
+        const link = e.target.closest('a');
+        if (link) {
+            tooltip.classList.remove('visible');
+        }
+    });
+}
+
+// Initialize smooth scrolling and link tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    initLinkTooltips();
+    initializeThinkingBubbles();
+    initializeCharts();
+});
+
+// ===== Text-to-Speech using OpenAI TTS API =====
+let currentAudio = null;  // For OpenAI TTS audio playback
+
+// Notify 4D of TTS status changes
+function notifyTTSStatus(status) {
+    notify4D('ttsstatus', { status });
+}
+
+// Play audio from base64 encoded data (OpenAI TTS)
+function playAudioBase64(base64Audio, mimeType) {
+    // Stop any currently playing audio
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
+    
+    mimeType = mimeType || 'audio/mpeg';
+    
+    try {
+        const bytes = base64ToBytes(base64Audio);
+        const audioBlob = new Blob([bytes], { type: mimeType });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        currentAudio = new Audio();
+        
+        currentAudio.oncanplaythrough = function() {
+            currentAudio.play().catch(function(e) {
+                console.error('Play failed:', e);
+                notifyTTSStatus('error');
+            });
+        };
+        
+        currentAudio.onplay = function() {
+            notifyTTSStatus('speaking');
+        };
+        
+        currentAudio.onended = function() {
+            URL.revokeObjectURL(audioUrl);
+            currentAudio = null;
+            notifyTTSStatus('ended');
+        };
+        
+        currentAudio.onerror = function(event) {
+            console.error('OpenAI TTS audio error:', event);
+            URL.revokeObjectURL(audioUrl);
+            currentAudio = null;
+            notifyTTSStatus('error');
+        };
+        
+        currentAudio.src = audioUrl;
+        currentAudio.load();
+        
+        return 'loading';
+    } catch (error) {
+        console.error('Failed to play audio:', error);
+        notifyTTSStatus('error');
+        return 'error';
+    }
+}
+
+// ===== Streaming TTS Audio Player using Web Audio API =====
+let audioContext = null;
+let isStreamPlaying = false;
+let streamStartTime = 0;
+let totalSamplesScheduled = 0;
+let streamingSourceNodes = [];
+let pendingChunks = [];
+let pendingSamplesCount = 0;
+let isBuffering = true;
+
+// Initialize streaming audio playback
+function initAudioStream() {
+    // Stop any previous stream first (without notifying - we're starting a new one)
+    stopAudioStream(true);
+    
+    // Create fresh audio context
+    audioContext = createAudioContext();
+    
+    // Reset state
+    streamingSourceNodes = [];
+    pendingChunks = [];
+    pendingSamplesCount = 0;
+    isStreamPlaying = true;
+    isBuffering = true;
+    totalSamplesScheduled = 0;
+    streamStartTime = null;
+    notifyTTSStatus('speaking');
+    return 'initialized';
+}
+
+// Schedule a batch of samples for playback
+function scheduleAudioBatch(samples) {
+    if (!audioContext || samples.length === 0) return;
+    
+    const buffer = audioContext.createBuffer(1, samples.length, CONFIG.PCM_SAMPLE_RATE);
+    buffer.getChannelData(0).set(samples);
+    
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContext.destination);
+    
+    const startTime = streamStartTime + (totalSamplesScheduled / CONFIG.PCM_SAMPLE_RATE);
+    source.start(startTime);
+    
+    streamingSourceNodes.push(source);
+    totalSamplesScheduled += samples.length;
+}
+
+// Add a chunk of PCM audio data (base64 encoded, 16-bit signed LE, 24kHz mono)
+function addAudioChunk(base64Chunk) {
+    if (!audioContext || !isStreamPlaying) {
+        return 'not_initialized';
+    }
+    
+    try {
+        const bytes = base64ToBytes(base64Chunk);
+        
+        // Skip very small chunks
+        if (bytes.length < 64) {
+            return 'skipped_small';
+        }
+        
+        // Convert to samples
+        const samples = bytesToSamples(bytes);
+        
+        if (isBuffering) {
+            // Accumulate chunks in buffer
+            pendingChunks.push(samples);
+            pendingSamplesCount += samples.length;
+            
+            // Check if we have enough to start playing
+            if (pendingSamplesCount >= CONFIG.BUFFER_THRESHOLD) {
+                isBuffering = false;
+                streamStartTime = audioContext.currentTime + 0.05;
+                
+                // Concatenate and schedule all buffered audio
+                const bufferedSamples = concatFloat32Arrays(pendingChunks);
+                scheduleAudioBatch(bufferedSamples);
+                pendingChunks = [];
+                pendingSamplesCount = 0;
+            }
+        } else {
+            // Stream directly - schedule immediately
+            scheduleAudioBatch(samples);
+        }
+        
+        return 'added';
+    } catch (error) {
+        console.error('Failed to add audio chunk:', error);
+        return 'error';
+    }
+}
+
+// Signal that all chunks have been sent
+function endAudioStream() {
+    if (!audioContext) {
+        return 'not_playing';
+    }
+    
+    // If we were still buffering, play whatever we have
+    if (isBuffering && pendingChunks.length > 0) {
+        isBuffering = false;
+        streamStartTime = audioContext.currentTime + 0.05;
+        const bufferedSamples = concatFloat32Arrays(pendingChunks);
+        scheduleAudioBatch(bufferedSamples);
+        pendingChunks = [];
+        pendingSamplesCount = 0;
+    }
+    
+    isStreamPlaying = false;
+    
+    // Calculate when playback will finish
+    if (streamStartTime && totalSamplesScheduled > 0) {
+        const endTime = streamStartTime + (totalSamplesScheduled / CONFIG.PCM_SAMPLE_RATE);
+        const remainingTime = (endTime - audioContext.currentTime) * 1000;
+        
+        // Notify 4D when playback finishes
+        if (remainingTime > 0) {
+            setTimeout(() => notifyTTSStatus('ended'), remainingTime + 100);
+        } else {
+            notifyTTSStatus('ended');
+        }
+    } else {
+        notifyTTSStatus('ended');
+    }
+    
+    return 'ending';
+}
+
+// Stop streaming audio playback
+function stopAudioStream(skipNotify) {
+    isStreamPlaying = false;
+    
+    // Stop all scheduled source nodes
+    for (const node of streamingSourceNodes) {
+        try { node.stop(); } catch (e) { /* Ignore if already stopped */ }
+    }
+    streamingSourceNodes = [];
+    
+    if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+    }
+    
+    totalSamplesScheduled = 0;
+    
+    if (!skipNotify) {
+        notifyTTSStatus('ended');
+    }
+    return 'stopped';
+}
+
+// Stop any playing audio
+function stopSpeaking() {
+    // Stop TTS queue if active
+    if (ttsQueueActive) {
+        stopTTSQueue();
+        return 'stopped_queue';
+    }
+    // Stop streaming audio if active
+    if (isStreamPlaying || audioContext) {
+        stopAudioStream();
+    }
+    // Stop regular audio if playing
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+        notifyTTSStatus('ended');
+        return 'stopped';
+    }
+    return 'not_speaking';
+}
+
+// ===== Queued TTS for Pipelined Speech =====
+// This allows multiple TTS requests to be queued and played sequentially
+// Each request has a unique ID to ensure proper ordering
+
+let ttsQueueActive = false;
+let ttsQueueFinalized = false;
+let ttsQueuePlaying = false;
+let ttsQueueContext = null;
+let ttsQueueScheduledEnd = 0;
+let ttsQueueSourceNodes = [];
+let ttsRequestBuffers = {};
+let ttsExpectedRequests = [];
+let ttsNextRequestToPlay = 1;
+
+function initTTSQueue() {
+    console.log('initTTSQueue called');
+    
+    // Stop any previous playback
+    stopTTSQueue(true);
+    
+    // Reset state
+    ttsQueueActive = true;
+    ttsQueueFinalized = false;
+    ttsQueuePlaying = false;
+    ttsQueueScheduledEnd = 0;
+    ttsQueueSourceNodes = [];
+    ttsRequestBuffers = {};
+    ttsExpectedRequests = [];
+    ttsNextRequestToPlay = 1;
+    
+    // Create audio context
+    ttsQueueContext = createAudioContext();
+    console.log('Audio context created, state:', ttsQueueContext.state);
+    
+    if (ttsQueueContext.state === 'suspended') {
+        console.log('Resuming suspended audio context');
+        ttsQueueContext.resume();
+    }
+    
+    notifyTTSStatus('speaking');
+    return 'initialized';
+}
+
+function registerTTSRequest(requestId) {
+    // Register that we're expecting a TTS request with this ID
+    console.log('registerTTSRequest:', requestId);
+    ttsExpectedRequests.push(requestId);
+    ttsRequestBuffers[requestId] = { chunks: [], complete: false };
+    return 'registered';
+}
+
+function addQueuedAudioChunk(base64Chunk, requestId) {
+    console.log('addQueuedAudioChunk for request', requestId, 'chunk size:', base64Chunk ? base64Chunk.length : 0);
+    if (!ttsQueueActive) {
+        console.log('Queue not active, ignoring chunk');
+        return 'not_active';
+    }
+    
+    if (!ttsRequestBuffers[requestId]) {
+        ttsRequestBuffers[requestId] = { chunks: [], complete: false };
+    }
+    
+    try {
+        const bytes = base64ToBytes(base64Chunk);
+        
+        if (bytes.length < 64) {
+            return 'skipped_small';
+        }
+        
+        const samples = bytesToSamples(bytes);
+        ttsRequestBuffers[requestId].chunks.push(samples);
+        
+        return 'added';
+    } catch (error) {
+        console.error('Failed to add queued audio chunk:', error);
+        return 'error';
+    }
+}
+
+function endQueuedAudioStream(requestId) {
+    console.log('endQueuedAudioStream for request', requestId);
+    if (!ttsQueueActive) {
+        console.log('Queue not active');
+        return 'not_active';
+    }
+    
+    const buffer = ttsRequestBuffers[requestId];
+    console.log('Request buffer:', buffer ? 'chunks=' + buffer.chunks.length : 'NOT FOUND');
+    if (ttsRequestBuffers[requestId]) {
+        ttsRequestBuffers[requestId].complete = true;
+    }
+    
+    tryPlayNextInOrder();
+    return 'queued';
+}
+
+function errorQueuedAudioStream(requestId, error) {
+    console.error('TTS queue error for request ' + requestId + ':', error);
+    if (ttsRequestBuffers[requestId]) {
+        ttsRequestBuffers[requestId].chunks = [];
+        ttsRequestBuffers[requestId].complete = true;
+    }
+    tryPlayNextInOrder();
+    return 'error_handled';
+}
+
+function tryPlayNextInOrder() {
+    console.log('tryPlayNextInOrder, nextId:', ttsNextRequestToPlay, 'active:', ttsQueueActive);
+    if (!ttsQueueContext || !ttsQueueActive) {
+        console.log('No context or not active');
+        return;
+    }
+    
+    // Check if the next expected request is ready
+    const nextId = ttsNextRequestToPlay;
+    const request = ttsRequestBuffers[nextId];
+    console.log('Looking for request', nextId, ':', request ? ('complete=' + request.complete + ', chunks=' + request.chunks.length) : 'NOT FOUND');
+    
+    if (!request || !request.complete) {
+        // Next request not ready yet, wait
+        console.log('Request not ready, waiting');
+        return;
+    }
+    
+    // Mark this request as being processed and increment counter BEFORE playing
+    ttsNextRequestToPlay++;
+    const samplesChunks = request.chunks;
+    delete ttsRequestBuffers[nextId];
+    
+    // Play this request's audio
+    if (samplesChunks.length > 0) {
+        const fullBuffer = concatFloat32Arrays(samplesChunks);
+        scheduleQueuedAudio(fullBuffer);
+    }
+    
+    // Immediately try to schedule the next one (they'll play sequentially due to ttsQueueScheduledEnd)
+    tryPlayNextInOrder();
+}
+
+function scheduleQueuedAudio(samples) {
+    console.log('scheduleQueuedAudio, samples:', samples.length, 'context state:', ttsQueueContext ? ttsQueueContext.state : 'null');
+    if (!ttsQueueContext || samples.length === 0) {
+        console.log('No context or empty samples');
+        return;
+    }
+    
+    if (ttsQueueContext.state === 'suspended') {
+        console.log('Resuming suspended context before playing');
+        ttsQueueContext.resume();
+    }
+    
+    ttsQueuePlaying = true;
+    
+    const buffer = ttsQueueContext.createBuffer(1, samples.length, CONFIG.PCM_SAMPLE_RATE);
+    buffer.getChannelData(0).set(samples);
+    
+    const source = ttsQueueContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ttsQueueContext.destination);
+    
+    const now = ttsQueueContext.currentTime;
+    const startTime = Math.max(now + 0.02, ttsQueueScheduledEnd);
+    console.log('Starting audio at', startTime, 'duration:', samples.length / CONFIG.PCM_SAMPLE_RATE);
+    
+    source.start(startTime);
+    ttsQueueSourceNodes.push(source);
+    
+    ttsQueueScheduledEnd = startTime + (samples.length / CONFIG.PCM_SAMPLE_RATE);
+    
+    source.onended = function() {
+        const idx = ttsQueueSourceNodes.indexOf(source);
+        if (idx > -1) ttsQueueSourceNodes.splice(idx, 1);
+        
+        ttsQueuePlaying = ttsQueueSourceNodes.length > 0;
+        
+        checkQueueComplete();
+    };
+}
+
+function checkQueueComplete() {
+    if (!ttsQueueFinalized) {
+        return;  // More requests might be coming
+    }
+    
+    // Check if all expected requests have been played
+    const allPlayed = ttsExpectedRequests.every(id => id < ttsNextRequestToPlay);
+    const nothingPlaying = ttsQueueSourceNodes.length === 0;
+    
+    if (allPlayed && nothingPlaying) {
+        finishTTSQueue();
+    }
+}
+
+function finalizeTTSQueue() {
+    // No more TTS requests coming
+    console.log('finalizeTTSQueue called, expected:', ttsExpectedRequests, 'nextToPlay:', ttsNextRequestToPlay);
+    ttsQueueFinalized = true;
+    
+    // Try to play if we haven't started yet
+    tryPlayNextInOrder();
+    
+    // Check if already complete
+    checkQueueComplete();
+    
+    return 'finalized';
+}
+
+function finishTTSQueue() {
+    ttsQueuePlaying = false;
+    ttsQueueActive = false;
+    
+    // Clean up
+    if (ttsQueueContext) {
+        ttsQueueContext.close();
+        ttsQueueContext = null;
+    }
+    ttsQueueSourceNodes = [];
+    ttsRequestBuffers = {};
+    ttsExpectedRequests = [];
+    
+    notifyTTSStatus('ended');
+}
+
+function stopTTSQueue(skipNotify) {
+    // Stop the TTS queue and all playback
+    ttsQueueActive = false;
+    ttsQueuePlaying = false;
+    ttsQueueFinalized = false;
+    ttsRequestBuffers = {};
+    ttsExpectedRequests = [];
+    
+    // Stop all playing sources
+    for (const node of ttsQueueSourceNodes) {
+        try { node.stop(); } catch (e) {}
+    }
+    ttsQueueSourceNodes = [];
+    
+    if (ttsQueueContext) {
+        ttsQueueContext.close();
+        ttsQueueContext = null;
+    }
+    
+    if (!skipNotify) {
+        notifyTTSStatus('ended');
+    }
+}
+
+// ===== Audio Recording for Whisper API =====
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let audioStream = null;
+
+// Voice Activity Detection (VAD) variables
+let vadAudioContext = null;
+let analyser = null;
+let silenceTimer = null;
+let recordingStartTime = 0;
+let maxAudioLevel = 0;
+
+// Toggle audio recording - called from 4D (non-blocking)
+function toggleAudioRecording() {
+    if (isRecording) {
+        stopRecording();
+        return 'stopping';
+    } else {
+        startRecording();
+        return 'starting';
+    }
+}
+
+function startRecording() {
+    navigator.mediaDevices.getUserMedia({ 
+        audio: {
+            echoCancellation: true,
+            noiseSuppression: true
+        } 
+    })
+    .then(function(stream) {
+        audioStream = stream;
+        audioChunks = [];
+        recordingStartTime = Date.now();
+        maxAudioLevel = 0;
+        
+        vadAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = vadAudioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const source = vadAudioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        
+        let mimeType = 'audio/webm';
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            mimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+        }
+        
+        mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+        
+        mediaRecorder.ondataavailable = function(event) {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = function() {
+            isRecording = false;
+            
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+                silenceTimer = null;
+            }
+            if (vadAudioContext) {
+                vadAudioContext.close();
+                vadAudioContext = null;
+            }
+            
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+                audioStream = null;
+            }
+            
+            if (maxAudioLevel < CONFIG.SPEECH_THRESHOLD) {
+                notifyStatus('silence');
+                return;
+            }
+            
+            notifyStatus('processing');
+            
+            setTimeout(function() {
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    const base64Audio = reader.result.split(',')[1];
+                    notify4D('audiodata', 'data=' + base64Audio);
+                };
+                reader.onerror = function() {
+                    console.error('FileReader error');
+                    notifyStatus('error');
+                };
+                reader.readAsDataURL(audioBlob);
+            }, 50);
+        };
+        
+        mediaRecorder.onerror = function(event) {
+            console.error('MediaRecorder error:', event.error);
+            isRecording = false;
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+                silenceTimer = null;
+            }
+            notifyStatus('error');
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        notifyStatus('recording');
+        
+        monitorSilence();
+    })
+    .catch(function(error) {
+        console.error('Failed to start audio recording:', error);
+        notifyStatus('error');
+    });
+}
+
+function monitorSilence() {
+    if (!isRecording || !analyser) return;
+    
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(dataArray);
+    
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+    }
+    const average = sum / dataArray.length;
+    
+    if (average > maxAudioLevel) {
+        maxAudioLevel = average;
+    }
+    
+    const recordingDuration = Date.now() - recordingStartTime;
+    
+    if (recordingDuration > CONFIG.MIN_RECORDING_TIME) {
+        if (average < CONFIG.SILENCE_THRESHOLD) {
+            if (!silenceTimer) {
+                silenceTimer = setTimeout(function() {
+                    stopRecording();
+                }, CONFIG.SILENCE_DURATION);
+            }
+        } else {
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+                silenceTimer = null;
+            }
+        }
+    }
+    
+    if (isRecording) {
+        requestAnimationFrame(monitorSilence);
+    }
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+}
+
+function notifyStatus(status) {
+    setTimeout(function() {
+        notify4D('speechstatus', 'status=' + status);
+    }, 10);
+}
