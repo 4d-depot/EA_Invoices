@@ -34,3 +34,25 @@ This branch features an AI Chat. To set it up, you need to create an `AIProvider
 
 Leave API key empty if you use a local model.
 This project was mainly tested with OpenAI gpt-4.1 model.
+
+## Voice Features (AIVoice Branch)
+
+The AIVoice branch adds voice conversation capabilities to the AI Chat:
+
+### Speech-to-Text (STT)
+- **Voice input**: Click the microphone button to record your voice
+- **Whisper API integration**: Audio is transcribed using OpenAI's Whisper API
+- **Voice Activity Detection (VAD)**: Automatic silence detection stops recording after 1.5 seconds of silence
+- **Continuous conversation mode**: Toggle for hands-free voice conversations
+
+### Text-to-Speech (TTS)
+- **Streaming audio**: Real-time audio playback using OpenAI's TTS API with PCM streaming
+- **Pipelined TTS**: Multiple sentences are queued and played sequentially for natural conversation flow
+- **Web Audio API**: Low-latency audio playback directly in the web area
+
+### Technical Highlights
+- `VoiceServices` class handles both STT (Whisper) and TTS (OpenAI) API calls
+- `TTSRequestHandler` class manages async HTTP callbacks for streaming audio
+- Externalized JavaScript (`chat-template.js`) for better maintainability
+- DOMPurify integration for secure HTML sanitization
+
