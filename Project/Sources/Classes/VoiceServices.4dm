@@ -50,7 +50,7 @@ Function _buildTTSBody($text : Text; $options : Object) : Object
 	
 	return $body
 
-Function generateSpeechStreaming($text : Text; $options : Object; $onChunk : 4D:C1709.Function; $onComplete : 4D:C1709.Function; $formWindow : Integer; $requestId : Integer:=0)
+Function generateSpeechStreaming($text : Text; $options : Object; $onChunk : 4D:C1709.Function; $onComplete : 4D:C1709.Function; $formWindow : Integer; $requestId : Integer)
 	// Generate speech audio with streaming - calls $onChunk for each data chunk
 	// $options can contain: model, voice, speed, response_format, instructions
 	// $onChunk receives: ($chunkBlob : Blob; $chunkIndex : Integer; $formWindow : Integer[; $requestId : Integer])
